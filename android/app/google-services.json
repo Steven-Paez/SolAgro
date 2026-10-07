@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "749243318079",
+    "project_id": "solagro-1597d",
+    "storage_bucket": "solagro-1597d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:749243318079:android:b325544b324e3c98589d8a",
+        "android_client_info": {
+          "package_name": "com.example.solagro"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDJ86tTK7LTwULAGPBnmfcWYNxgapyTkeE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,934 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+</head>
+<body>
+<title>Tabla Periódica Agro</title>
+<style>
+/* Layout: cabecera con pestañas; la tabla ocupa todo el ancho y se desplaza dentro de su propio marco en el celular; el detalle abre como hoja modal. */
+:root{
+  --bg:#f2f5f0; --surface:#ffffff; --surface2:#e8eee6; --ink:#17231b; --muted:#566559; --line:#cfd9cf;
+  --accent:#1c6a3a; --accent-ink:#ffffff; --warn:#b26a00; --bad:#c2333a; --good:#23874a;
+  --c-alc:#d9480f; --c-alt:#e0a100; --c-tra:#2f7fd1; --c-pos:#4f8b99; --c-met:#8a6fd1; --c-nom:#2e9e58;
+  --c-hal:#12a3a3; --c-nob:#c2478f; --c-lan:#a77b3f; --c-act:#94605f; --c-des:#8a918b;
+  --mix:24%;
+  --f-display:"Bricolage Grotesque","Avenir Next","Segoe UI",sans-serif;
+  --f-body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f1612; --surface:#18221c; --surface2:#212e26; --ink:#e7efe8; --muted:#9bab9f; --line:#324238;
+  --accent:#6fd08f; --accent-ink:#0c1a11; --warn:#f0b24a; --bad:#ff7b80; --good:#6fd08f; --mix:34%; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#0f1612; --surface:#18221c; --surface2:#212e26; --ink:#e7efe8; --muted:#9bab9f; --line:#324238;
+  --accent:#6fd08f; --accent-ink:#0c1a11; --warn:#f0b24a; --bad:#ff7b80; --good:#6fd08f; --mix:34%; color-scheme:dark }
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--f-body)}
+.wrap{max-width:1240px;margin:0 auto;padding-inline:16px;padding-block:20px 48px;display:flex;flex-direction:column;gap:18px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(1.6rem,4vw,2.3rem);font-weight:700;letter-spacing:-.02em}
+h2{font-size:1.25rem} h3{font-size:1.05rem}
+p{margin:0}
+.lede{color:var(--muted);max-width:65ch}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.tabs{display:flex;gap:2px;overflow-x:auto;border-bottom:1px solid var(--line)}
+.tabs button{white-space:nowrap;background:none;border:0;border-bottom:3px solid transparent;padding:8px 12px;cursor:pointer;font-weight:600;color:var(--muted)}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+
+.bar{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center}
+.field{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:7px 10px;min-width:0}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:none;padding:7px 11px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);font-weight:600}
+.phbox{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.phbox output{font-family:var(--f-mono);font-weight:500;min-width:3.2em}
+.legend{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:.82rem;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:12px;height:12px;border-radius:3px;background:color-mix(in oklab,var(--hue) 60%,var(--surface));border:1px solid var(--hue)}
+
+.pt-scroll{overflow-x:auto;padding-bottom:6px}
+.pt{display:grid;grid-template-columns:repeat(18,minmax(44px,1fr));grid-auto-rows:minmax(52px,auto);gap:3px;min-width:840px}
+.el{--hue:var(--c-des);position:relative;border:1px solid color-mix(in oklab,var(--hue) 55%,var(--surface));border-radius:5px;
+  background:color-mix(in oklab,var(--hue) var(--mix),var(--surface));cursor:pointer;padding:3px 4px 4px;text-align:left;
+  display:flex;flex-direction:column;min-width:0;transition:transform .12s}
+.el:hover{transform:translateY(-2px);border-color:var(--hue)}
+.el .z{font:500 .62rem/1 var(--f-mono);color:var(--muted)}
+.el .s{font:700 1.08rem/1.15 var(--f-display)}
+.el .n{font-size:.56rem;line-height:1.1;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.el.dim{opacity:.22}
+.ph-slot{border:1px dashed var(--line);border-radius:5px;display:grid;place-items:center;font:500 .62rem var(--f-mono);color:var(--muted)}
+.gap-row{grid-column:1/-1;height:8px}
+@media (prefers-reduced-motion:reduce){.el{transition:none}}
+
+dialog{border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);padding:0;width:min(760px,calc(100vw - 24px));max-height:calc(100vh - 32px)}
+dialog::backdrop{background:rgb(0 0 0 / .5)}
+.d-head{--hue:var(--c-des);display:flex;gap:14px;align-items:center;padding:16px 18px;background:color-mix(in oklab,var(--hue) var(--mix),var(--surface));border-bottom:1px solid var(--line);position:sticky;top:0}
+.d-sym{font:700 2.6rem/1 var(--f-display);min-width:1.6em;text-align:center}
+.d-head .meta{flex:1;min-width:0}
+.d-head .meta small{font-family:var(--f-mono);color:var(--muted)}
+.x{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:6px 10px;cursor:pointer}
+.d-body{padding:16px 18px 22px;display:flex;flex-direction:column;gap:18px}
+.sec h3{margin-bottom:8px;color:var(--accent)}
+dl.kv{display:grid;grid-template-columns:minmax(120px,34%) 1fr;gap:6px 14px;margin:0}
+dl.kv dt{color:var(--muted);font-size:.86rem} dl.kv dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.pill{display:inline-block;font-size:.74rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase;padding:2px 8px;border-radius:99px;border:1px solid var(--hue,var(--line));color:var(--ink);background:color-mix(in oklab,var(--hue,var(--line)) 22%,var(--surface))}
+.mini{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--surface2);border-radius:6px;padding:10px 12px}
+.mini input{width:7em}
+
+.tscroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{font-size:.74rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;text-align:right}
+th.num{text-align:right}
+
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:5px 12px;cursor:pointer}
+.chips button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+.calcs{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));gap:14px;align-items:start}
+.calc{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.calc .area{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.fx{font-family:var(--f-mono);background:var(--surface2);border-radius:6px;padding:8px 10px;font-size:.88rem;overflow-x:auto;white-space:nowrap}
+.calc p{font-size:.88rem;color:var(--muted)}
+.ins{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+.ins label{display:flex;flex-direction:column;gap:3px;font-size:.78rem;color:var(--muted);min-width:0}
+.ins input,.ins select{width:100%}
+.out ol{margin:0;padding-left:1.3em;font-size:.86rem;font-family:var(--f-mono);overflow-wrap:anywhere}
+.out .res{margin-top:8px;display:flex;flex-direction:column;gap:2px}
+.out .res b{font-family:var(--f-mono)}
+.out .res div{border-left:3px solid var(--accent);padding-left:8px}
+.out .err{color:var(--bad)} .out .nota{font-size:.82rem;color:var(--muted);margin-top:6px}
+.note{font-size:.82rem;color:var(--muted);max-width:75ch}
+.panel{display:flex;flex-direction:column;gap:14px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));gap:14px;align-items:start}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.card p{font-size:.9rem}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:9px 12px;cursor:pointer;text-align:left}
+.btn:hover{border-color:var(--accent)}
+.btn.pri{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+.btn.ok{border-color:var(--good);background:color-mix(in oklab,var(--good) 22%,var(--surface))}
+.btn.ko{border-color:var(--bad);background:color-mix(in oklab,var(--bad) 22%,var(--surface))}
+.opts{display:flex;flex-direction:column;gap:8px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.chipel{font:500 .82rem var(--f-mono);border:1px solid var(--accent);color:var(--ink);background:color-mix(in oklab,var(--accent) 14%,var(--surface));border-radius:4px;padding:0 6px;cursor:pointer}
+.steps{margin:0;padding-left:1.4em;display:flex;flex-direction:column;gap:8px;font-size:.9rem}
+.muted{color:var(--muted)}
+textarea.field{width:100%;min-height:90px;resize:vertical}
+details summary{cursor:pointer;color:var(--accent);font-weight:600}
+td.wrap-ok,th.wrap-ok{white-space:normal;min-width:28ch}
+svg.cyc{width:100%;max-width:560px;height:auto;display:block}
+svg.cyc text{font-family:var(--f-body);font-size:11px}
+.cn rect{fill:var(--surface2);stroke:var(--line)} .cn text{fill:var(--ink);text-anchor:middle;dominant-baseline:central}
+.ce{cursor:pointer} .ce line{stroke:var(--muted);stroke-width:1.5} .ce polygon{fill:var(--muted)}
+.ce circle{fill:var(--surface);stroke:var(--muted)} .ce text{fill:var(--ink);text-anchor:middle;dominant-baseline:central;font-family:var(--f-mono);font-size:10px}
+.ce.on line{stroke:var(--accent);stroke-width:3} .ce.on polygon{fill:var(--accent)} .ce.on circle{fill:var(--accent);stroke:var(--accent)} .ce.on text{fill:var(--accent-ink)}
+.proc{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,230px),1fr));gap:6px}
+.proc .btn[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in oklab,var(--accent) 14%,var(--surface))}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Tabla Periódica Agro</h1>
+    <p class="lede">Los 118 elementos vistos desde la ingeniería agronómica: qué hacen en la planta, en el suelo y en las biomoléculas, con las fórmulas resueltas paso a paso.</p>
+  </header>
+
+  <nav class="tabs" role="tablist" id="tabs">
+    <button role="tab" data-tab="tabla" aria-selected="true">Tabla</button>
+    <button role="tab" data-tab="aminoacidos" aria-selected="false">Biomoléculas</button>
+    <button role="tab" data-tab="calculadoras" aria-selected="false">Fórmulas</button>
+  </nav>
+
+  <section id="p-tabla" style="display:flex;flex-direction:column;gap:12px">
+    <div class="bar">
+      <input class="field" id="buscar" type="search" placeholder="Buscar: hierro, Fe, 26…" aria-label="Buscar elemento">
+      <div class="seg" id="modo" role="group" aria-label="Colorear por">
+        <button data-m="fam" aria-pressed="true">Familia</button>
+        <button data-m="rol" aria-pressed="false">Rol en la planta</button>
+        <button data-m="ph" aria-pressed="false">pH del suelo</button>
+      </div>
+      <div class="phbox" id="phbox" hidden>
+        <label for="ph">pH del suelo</label>
+        <input id="ph" type="range" min="4" max="9" step="0.1" value="5.2">
+        <output id="phv" for="ph">5,2</output>
+      </div>
+    </div>
+    <div class="legend" id="leyenda"></div>
+    <div class="pt-scroll"><div class="pt" id="pt"></div></div>
+    <p class="note" id="nota-tabla">Toca un elemento para ver sus propiedades, su papel en la planta y el suelo, las biomoléculas donde aparece y los cálculos asociados.</p>
+  </section>
+
+  <section id="p-aminoacidos" hidden style="display:flex;flex-direction:column;gap:12px">
+    <h2>Los 20 aminoácidos proteicos</h2>
+    <p class="lede">Todos contienen C, H, O y N. Solo cisteína y metionina llevan azufre. El punto isoeléctrico (pI) es el pH donde la carga neta es cero: se promedian los dos pKa que rodean a la forma neutra.</p>
+    <div class="tscroll"><table id="taa"></table></div>
+    <p class="note">pKa de referencia de textos de bioquímica (Lehninger); varían ligeramente entre fuentes. Masa molar y pI se calculan en la app a partir de la fórmula y los pKa. ★ = esencial en la dieta humana. En cereales suele ser limitante la lisina; en leguminosas, la metionina.</p>
+  </section>
+
+  <section id="p-calculadoras" hidden style="display:flex;flex-direction:column;gap:12px">
+    <h2>Fórmulas y calculadoras</h2>
+    <p class="lede">Cada tarjeta abre con un ejemplo resuelto. Cambia los valores y el paso a paso se recalcula con tus números.</p>
+    <div class="chips" id="areas"></div>
+    <div class="calcs" id="calcs"></div>
+  </section>
+</div>
+
+<dialog id="dlg" aria-labelledby="d-nombre"></dialog>
+
+<script>
+"use strict";
+/* ---------- Datos: símbolo, nombre, masa atómica, electronegatividad (Pauling), estados de oxidación comunes ---------- */
+const RAW="H,Hidrógeno,1.008,2.20,+1 -1|He,Helio,4.0026,,|Li,Litio,6.94,0.98,+1|Be,Berilio,9.0122,1.57,+2|B,Boro,10.81,2.04,+3|C,Carbono,12.011,2.55,-4 +2 +4|N,Nitrógeno,14.007,3.04,-3 +3 +5|O,Oxígeno,15.999,3.44,-2|F,Flúor,18.998,3.98,-1|Ne,Neón,20.180,,|Na,Sodio,22.990,0.93,+1|Mg,Magnesio,24.305,1.31,+2|Al,Aluminio,26.982,1.61,+3|Si,Silicio,28.085,1.90,+4|P,Fósforo,30.974,2.19,-3 +3 +5|S,Azufre,32.06,2.58,-2 +4 +6|Cl,Cloro,35.45,3.16,-1 +1 +5 +7|Ar,Argón,39.948,,|K,Potasio,39.098,0.82,+1|Ca,Calcio,40.078,1.00,+2|Sc,Escandio,44.956,1.36,+3|Ti,Titanio,47.867,1.54,+3 +4|V,Vanadio,50.942,1.63,+2 +3 +4 +5|Cr,Cromo,51.996,1.66,+2 +3 +6|Mn,Manganeso,54.938,1.55,+2 +4 +7|Fe,Hierro,55.845,1.83,+2 +3|Co,Cobalto,58.933,1.88,+2 +3|Ni,Níquel,58.693,1.91,+2|Cu,Cobre,63.546,1.90,+1 +2|Zn,Zinc,65.38,1.65,+2|Ga,Galio,69.723,1.81,+3|Ge,Germanio,72.630,2.01,+2 +4|As,Arsénico,74.922,2.18,-3 +3 +5|Se,Selenio,78.971,2.55,-2 +4 +6|Br,Bromo,79.904,2.96,-1 +1 +5|Kr,Kriptón,83.798,3.00,|Rb,Rubidio,85.468,0.82,+1|Sr,Estroncio,87.62,0.95,+2|Y,Itrio,88.906,1.22,+3|Zr,Circonio,91.224,1.33,+4|Nb,Niobio,92.906,1.6,+5|Mo,Molibdeno,95.95,2.16,+4 +6|Tc,Tecnecio,98,1.9,+4 +7|Ru,Rutenio,101.07,2.2,+3 +4|Rh,Rodio,102.91,2.28,+3|Pd,Paladio,106.42,2.20,+2 +4|Ag,Plata,107.87,1.93,+1|Cd,Cadmio,112.41,1.69,+2|In,Indio,114.82,1.78,+3|Sn,Estaño,118.71,1.96,+2 +4|Sb,Antimonio,121.76,2.05,+3 +5|Te,Telurio,127.60,2.1,-2 +4 +6|I,Yodo,126.90,2.66,-1 +1 +5 +7|Xe,Xenón,131.29,2.6,|Cs,Cesio,132.91,0.79,+1|Ba,Bario,137.33,0.89,+2|La,Lantano,138.91,1.10,+3|Ce,Cerio,140.12,1.12,+3 +4|Pr,Praseodimio,140.91,1.13,+3|Nd,Neodimio,144.24,1.14,+3|Pm,Prometio,145,,+3|Sm,Samario,150.36,1.17,+3|Eu,Europio,151.96,,+2 +3|Gd,Gadolinio,157.25,1.20,+3|Tb,Terbio,158.93,,+3|Dy,Disprosio,162.50,1.22,+3|Ho,Holmio,164.93,1.23,+3|Er,Erbio,167.26,1.24,+3|Tm,Tulio,168.93,1.25,+3|Yb,Iterbio,173.05,,+3|Lu,Lutecio,174.97,1.27,+3|Hf,Hafnio,178.49,1.3,+4|Ta,Tantalio,180.95,1.5,+5|W,Wolframio,183.84,2.36,+6|Re,Renio,186.21,1.9,+4 +7|Os,Osmio,190.23,2.2,+4|Ir,Iridio,192.22,2.20,+3 +4|Pt,Platino,195.08,2.28,+2 +4|Au,Oro,196.97,2.54,+1 +3|Hg,Mercurio,200.59,2.00,+1 +2|Tl,Talio,204.38,1.62,+1 +3|Pb,Plomo,207.2,2.33,+2 +4|Bi,Bismuto,208.98,2.02,+3|Po,Polonio,209,2.0,+2 +4|At,Astato,210,2.2,-1|Rn,Radón,222,,|Fr,Francio,223,0.7,+1|Ra,Radio,226,0.9,+2|Ac,Actinio,227,1.1,+3|Th,Torio,232.04,1.3,+4|Pa,Protactinio,231.04,1.5,+5|U,Uranio,238.03,1.38,+4 +6|Np,Neptunio,237,1.36,+5|Pu,Plutonio,244,1.28,+4|Am,Americio,243,,+3|Cm,Curio,247,,+3|Bk,Berkelio,247,,+3|Cf,Californio,251,,+3|Es,Einstenio,252,,+3|Fm,Fermio,257,,+3|Md,Mendelevio,258,,+3|No,Nobelio,259,,+2|Lr,Lawrencio,266,,+3|Rf,Rutherfordio,267,,|Db,Dubnio,268,,|Sg,Seaborgio,269,,|Bh,Bohrio,270,,|Hs,Hasio,269,,|Mt,Meitnerio,278,,|Ds,Darmstatio,281,,|Rg,Roentgenio,282,,|Cn,Copernicio,285,,|Nh,Nihonio,286,,|Fl,Flerovio,289,,|Mc,Moscovio,290,,|Lv,Livermorio,293,,|Ts,Teneso,294,,|Og,Oganesón,294,,";
+const RADIO=new Set([43,61]); // sin isótopos estables: masa = número másico del isótopo más estable
+const CAT={alc:["Metal alcalino",[3,11,19,37,55,87]],alt:["Alcalinotérreo",[4,12,20,38,56,88]],tra:["Metal de transición",[]],pos:["Metal del bloque p",[13,31,49,50,81,82,83,84]],met:["Metaloide",[5,14,32,33,51,52]],nom:["No metal",[1,6,7,8,15,16,34]],hal:["Halógeno",[9,17,35,53,85]],nob:["Gas noble",[2,10,18,36,54,86]],lan:["Lantánido",[]],act:["Actínido",[]],des:["Propiedades poco conocidas",[]]};
+function catOf(Z){ for(const k in CAT) if(CAT[k][1].includes(Z)) return k;
+  if(Z>=57&&Z<=71) return "lan"; if(Z>=89&&Z<=103) return "act"; if(Z>=109) return "des"; return "tra"; }
+function posOf(Z){ const e=[0,2,10,18,36,54,86,118]; let p=1; while(Z>e[p]) p++; const i=Z-e[p-1]; let g,f=false;
+  if(p===1) g=i===1?1:18; else if(p<=3) g=i<=2?i:i+10; else if(p<=5) g=i; else if(i<=2) g=i; else if(i<=17){f=true;g=i} else g=i-14;
+  return {p,g,f}; }
+const ORD=["1s","2s","2p","3s","3p","4s","3d","4p","5s","4d","5p","6s","4f","5d","6p","7s","5f","6d","7p"], CAP={s:2,p:6,d:10,f:14};
+const EXC={Cr:"[Ar] 3d5 4s1",Cu:"[Ar] 3d10 4s1",Nb:"[Kr] 4d4 5s1",Mo:"[Kr] 4d5 5s1",Ru:"[Kr] 4d7 5s1",Rh:"[Kr] 4d8 5s1",Pd:"[Kr] 4d10",Ag:"[Kr] 4d10 5s1",La:"[Xe] 5d1 6s2",Ce:"[Xe] 4f1 5d1 6s2",Gd:"[Xe] 4f7 5d1 6s2",Pt:"[Xe] 4f14 5d9 6s1",Au:"[Xe] 4f14 5d10 6s1",Ac:"[Rn] 6d1 7s2",Th:"[Rn] 6d2 7s2",Pa:"[Rn] 5f2 6d1 7s2",U:"[Rn] 5f3 6d1 7s2",Np:"[Rn] 5f4 6d1 7s2",Cm:"[Rn] 5f7 6d1 7s2",Lr:"[Rn] 5f14 7s2 7p1"};
+const SUP={"0":"⁰","1":"¹","2":"²","3":"³","4":"⁴","5":"⁵","6":"⁶","7":"⁷","8":"⁸","9":"⁹","-":"⁻","+":"⁺"};
+const sup=s=>String(s).replace(/[0-9+-]/g,c=>SUP[c]);
+function fill(Z){ const o=[]; let r=Z; for(const sh of ORD){ if(r<=0) break; const k=Math.min(r,CAP[sh[1]]); o.push([sh,k]); r-=k; } return o; }
+function config(Z,sym){ let txt=EXC[sym];
+  if(!txt){ const nobles=[[86,"Rn"],[54,"Xe"],[36,"Kr"],[18,"Ar"],[10,"Ne"],[2,"He"]]; const core=nobles.find(([z])=>z<Z);
+    let sh=fill(Z); if(core) sh=sh.slice(fill(core[0]).length);
+    sh.sort((a,b)=>a[0][0]-b[0][0]||"spdf".indexOf(a[0][1])-"spdf".indexOf(b[0][1]));
+    txt=(core?"["+core[1]+"] ":"")+sh.map(([s,k])=>s+k).join(" "); }
+  return txt.replace(/([spdf])(\d+)/g,(m,l,k)=>l+sup(k)); }
+const GAS=new Set([1,2,7,8,9,10,17,18,36,54,86]);
+const EL=RAW.split("|").map((r,i)=>{ const [sym,name,mass,en,ox]=r.split(","); const Z=i+1, pos=posOf(Z);
+  return {Z,sym,name,mass:+mass,en:en?+en:null,ox:ox?ox.split(" "):[],cat:catOf(Z),...pos,
+    block:pos.f?"f":(pos.g<=2||Z===2)?"s":pos.g>=13?"p":"d",
+    state:Z>=104?"Desconocido (sintético)":GAS.has(Z)?"Gas":(Z===35||Z===80)?"Líquido":"Sólido"}; });
+const BY={}; EL.forEach(e=>BY[e.sym]=e);
+const MASS={}; EL.forEach(e=>MASS[e.sym]=e.mass);
+
+/* ---------- Agronomía: rol, forma absorbida, función, deficiencia, movilidad, pH de mayor disponibilidad, fuentes, bioquímica, ecología ---------- */
+const ROL={macro:["Macronutriente","--c-nom"],micro:["Micronutriente","--c-tra"],estr:["Estructural (aire y agua)","--c-hal"],ben:["Benéfico","--c-alt"],tox:["Tóxico o contaminante","--c-alc"],no:["Sin función conocida en plantas","--c-des"]};
+const AG={
+C:{rol:"estr",abs:"CO₂ por los estomas",fun:"Esqueleto de todas las biomoléculas. Cerca del 45 % de la materia seca vegetal es carbono fijado en la fotosíntesis.",bio:"Está en los 20 aminoácidos, carbohidratos, lípidos y ácidos nucleicos.",eco:"Ciclo del carbono: fotosíntesis, respiración y descomposición. El suelo almacena más C que la atmósfera. Materia orgánica ≈ C orgánico × 1,724. La relación C/N del residuo decide si hay mineralización o inmovilización.",conv:["CO2"]},
+H:{rol:"estr",abs:"H₂O por la raíz",fun:"Forma parte del agua y de toda molécula orgánica. El gradiente de H⁺ impulsa la síntesis de ATP en cloroplastos y mitocondrias.",bio:"Está en los 20 aminoácidos. El pH es −log[H⁺] y define la carga de cada aminoácido.",eco:"La actividad de H⁺ es la acidez del suelo. La nitrificación del amonio y la extracción de bases por el cultivo acidifican."},
+O:{rol:"estr",abs:"O₂ y CO₂ del aire, H₂O",fun:"Aceptor final de electrones en la respiración. Las raíces necesitan O₂ en los poros del suelo.",bio:"Está en los 20 aminoácidos (grupo carboxilo). Cadenas laterales con O: Ser, Thr, Tyr, Asp, Glu, Asn, Gln.",eco:"Suelos inundados o compactados quedan sin O₂: hay desnitrificación, reducción de Fe³⁺ y Mn⁴⁺ y producción de metano."},
+N:{rol:"macro",abs:"NO₃⁻ (nitrato) y NH₄⁺ (amonio)",fun:"Componente de aminoácidos, proteínas, ácidos nucleicos y clorofila. Es el nutriente que más limita el crecimiento vegetativo.",def:"Clorosis uniforme que empieza en las hojas viejas; plantas pequeñas y pálidas.",mov:"Móvil: los síntomas aparecen primero en hojas viejas.",ph:[6,8],fue:"Urea 46 % N · nitrato de amonio 33 % N · sulfato de amonio 21 % N · DAP 18 % N · MAP 11 % N.",bio:"Está en los 20 aminoácidos (grupo amino). N extra en la cadena lateral: Lys, Arg, His, Asn, Gln, Trp. La clorofila lleva 4 N. Proteína cruda ≈ N × 6,25.",eco:"Ciclo del nitrógeno: fijación biológica (Rhizobium, nitrogenasa con Fe y Mo), mineralización, nitrificación (NH₄⁺ → NO₂⁻ → NO₃⁻), desnitrificación. El nitrato se lixivia y el N₂O es gas de efecto invernadero.",conv:["NO3","NH4"]},
+P:{rol:"macro",abs:"H₂PO₄⁻ (domina bajo pH 7,2) y HPO₄²⁻",fun:"ATP, ácidos nucleicos y fosfolípidos de membrana. Clave en enraizamiento, floración y llenado de grano.",def:"Hojas viejas verde oscuro o púrpura, raíces pobres, maduración tardía.",mov:"Móvil en la planta; muy poco móvil en el suelo.",ph:[6,7.5],fue:"DAP 46 % P₂O₅ · MAP 52 % P₂O₅ · superfosfato triple 46 % · superfosfato simple 20 % · roca fosfórica 20–30 %.",bio:"No está en los aminoácidos, pero las quinasas fosforilan Ser, Thr y Tyr. ATP, ADN, ARN, NADPH, fosfolípidos.",eco:"Ciclo sedimentario, sin fase gaseosa. En suelos ácidos lo fijan Fe y Al; en alcalinos precipita con Ca. Su escorrentía causa eutrofización. Las micorrizas mejoran su absorción.",conv:["P2O5"]},
+K:{rol:"macro",abs:"K⁺",q:1,fun:"Activa más de 60 enzimas, regula la apertura de estomas y el balance hídrico, y mueve azúcares al fruto.",def:"Quemazón del borde de las hojas viejas; tallos débiles, frutos de baja calidad.",mov:"Móvil.",ph:[6,9],fue:"Cloruro de potasio 60 % K₂O · sulfato de potasio 50 % K₂O · nitrato de potasio 44 % K₂O.",bio:"No forma parte de ninguna biomolécula: actúa como ion libre y cofactor (piruvato quinasa).",eco:"Se lixivia en suelos arenosos. Compite con Ca²⁺ y Mg²⁺ por los sitios de intercambio y de absorción.",conv:["K2O"]},
+Ca:{rol:"macro",abs:"Ca²⁺",q:2,fun:"Une las paredes celulares (pectatos de calcio), estabiliza membranas y actúa como segundo mensajero.",def:"Aparece en tejido joven: pudrición apical del tomate, quemado de puntas en lechuga.",mov:"Inmóvil: viaja solo con la transpiración.",ph:[6.5,8.5],fue:"Cal agrícola (CaCO₃) · cal dolomita · yeso (CaSO₄·2H₂O) · nitrato de calcio.",bio:"Lo ligan los carboxilos de Asp y Glu en proteínas como la calmodulina.",eco:"Domina el complejo de cambio en suelos fértiles y regula el pH. El encalado desplaza al Al³⁺.",conv:["CaO","CaCO3"]},
+Mg:{rol:"macro",abs:"Mg²⁺",q:2,fun:"Átomo central de la clorofila. Casi todo el ATP trabaja como complejo Mg-ATP. Activa la rubisco.",def:"Clorosis entre las nervaduras de las hojas viejas.",mov:"Móvil.",ph:[6.5,8.5],fue:"Cal dolomita · sulfato de magnesio (kieserita, sal de Epsom) · óxido de magnesio.",bio:"Clorofila, Mg-ATP, ribosomas. Cofactor de quinasas.",eco:"Exceso de K o de Ca induce su deficiencia. Relación Ca/Mg deseable en suelo: cerca de 3 a 5.",conv:["MgO","MgCO3"]},
+S:{rol:"macro",abs:"SO₄²⁻ (sulfato)",fun:"Forma cisteína y metionina, puentes disulfuro, coenzima A, glutatión y centros hierro-azufre.",def:"Clorosis uniforme parecida a la de N, pero en hojas jóvenes.",mov:"Poco móvil.",ph:[6,9],fue:"Sulfato de amonio 24 % S · yeso 15–18 % S · azufre elemental 90 % S (acidifica el suelo).",bio:"Aminoácidos azufrados: Cys y Met. Puentes disulfuro Cys–Cys estabilizan proteínas. Glucosinolatos y aliína dan olor a crucíferas y ajo.",eco:"Ciclo del azufre: bacterias (Thiobacillus) oxidan S a sulfato y acidifican. El SO₂ atmosférico produce lluvia ácida.",conv:["SO4","SO3"]},
+Fe:{rol:"micro",abs:"Fe²⁺; las gramíneas toman Fe³⁺ con fitosideróforos",q:2,fun:"Citocromos, ferredoxina y síntesis de clorofila. Componente de la nitrogenasa y la leghemoglobina.",def:"Clorosis entre nervaduras en hojas jóvenes (clorosis férrica), típica de suelos calcáreos.",mov:"Inmóvil.",ph:[4,6.5],fue:"Sulfato ferroso · quelatos Fe-EDTA (suelo ácido) y Fe-EDDHA (suelo alcalino).",bio:"Grupo hemo y centros Fe–S ligados a cisteína. Catalasa y peroxidasas.",eco:"En suelos inundados el Fe³⁺ se reduce a Fe²⁺ soluble y puede ser tóxico (arroz)."},
+Mn:{rol:"micro",abs:"Mn²⁺",q:2,fun:"Centro Mn₄CaO₅ que rompe el agua en el fotosistema II. Superóxido dismutasa.",def:"Clorosis entre nervaduras con puntos necróticos en hojas jóvenes.",mov:"Inmóvil.",ph:[5,6.5],fue:"Sulfato de manganeso · quelato Mn-EDTA.",bio:"Cofactor de la Mn-SOD y de enzimas de la síntesis de lignina.",eco:"Tóxico en suelos muy ácidos (pH < 5) o mal drenados."},
+Zn:{rol:"micro",abs:"Zn²⁺",q:2,fun:"Síntesis de auxinas (vía triptófano), anhidrasa carbónica y proteínas con dedos de zinc.",def:"Entrenudos cortos y hojas pequeñas en roseta; bandas cloróticas en maíz.",mov:"Poco móvil.",ph:[5,7],fue:"Sulfato de zinc · óxido de zinc · quelato Zn-EDTA.",bio:"Lo coordinan Cys e His. Alcohol deshidrogenasa, ARN polimerasa.",eco:"Dosis altas de P inducen deficiencia de Zn. Clave en biofortificación de cereales."},
+Cu:{rol:"micro",abs:"Cu²⁺",q:2,fun:"Plastocianina (transporte de electrones), citocromo oxidasa y lignificación.",def:"Muerte de ápices, hojas jóvenes enrolladas, espigas vacías.",mov:"Inmóvil.",ph:[5,7],fue:"Sulfato de cobre · quelato Cu-EDTA. También fungicida (caldo bordelés).",bio:"Lo ligan His, Cys y Met. Cu/Zn-superóxido dismutasa, polifenol oxidasa.",eco:"Se acumula en suelos de viñedos y cafetales por uso repetido de fungicidas; la materia orgánica lo retiene con fuerza."},
+B:{rol:"micro",abs:"H₃BO₃ (ácido bórico, sin carga)",fun:"Entrecruza las pectinas de la pared celular. Necesario para el tubo polínico y el cuajado.",def:"Muerte de meristemos, frutos deformes, corazón hueco en raíces y tubérculos.",mov:"Inmóvil en la mayoría de las especies.",ph:[5,7],fue:"Bórax 11 % B · ácido bórico 17 % B · octoborato de sodio 20 % B.",bio:"Forma ésteres con azúcares de la pared (ramnogalacturonano II).",eco:"El margen entre deficiencia y toxicidad es muy estrecho. Se lixivia con facilidad.",conv:["B2O3"]},
+Mo:{rol:"micro",abs:"MoO₄²⁻ (molibdato)",fun:"Cofactor de la nitrato reductasa y de la nitrogenasa.",def:"Parece deficiencia de N; «cola de látigo» en coliflor.",mov:"Movilidad media.",ph:[6.5,9],fue:"Molibdato de sodio · molibdato de amonio (suele aplicarse a la semilla).",bio:"Cofactor de molibdeno (Moco) y cofactor FeMo de la nitrogenasa.",eco:"Es el único micronutriente cuya disponibilidad sube con el pH. Crítico para leguminosas en suelos ácidos."},
+Cl:{rol:"micro",abs:"Cl⁻",fun:"Participa en la fotólisis del agua y en el ajuste osmótico de los estomas.",def:"Rara: marchitez y bronceado de hojas.",mov:"Móvil.",ph:[4,9],fue:"Llega con el cloruro de potasio y el agua de riego.",bio:"Ion libre; no se integra a biomoléculas.",eco:"En exceso es un problema de salinidad. Tabaco, papa y aguacate son sensibles."},
+Ni:{rol:"micro",abs:"Ni²⁺",q:2,fun:"Componente de la ureasa, que convierte urea en amonio.",def:"Acumulación de urea y necrosis en la punta de las hojas («oreja de ratón» en pecán).",mov:"Móvil.",ph:[5,7],fue:"Sulfato de níquel (se requiere en cantidades mínimas).",bio:"Centro activo de la ureasa, coordinado por His.",eco:"Suelos de serpentina tienen Ni tóxico; hay plantas hiperacumuladoras."},
+Na:{rol:"ben",abs:"Na⁺",q:1,fun:"Benéfico en plantas C4 y CAM y en halófitas; puede reemplazar parte del K en el ajuste osmótico.",bio:"Ion libre.",eco:"Su exceso dispersa las arcillas: suelo sódico cuando el porcentaje de sodio intercambiable supera 15 %. Se corrige con yeso y lavado."},
+Si:{rol:"ben",abs:"H₄SiO₄ (ácido silícico)",fun:"Refuerza la epidermis de arroz, caña y gramíneas: menos acame y menos daño de hongos e insectos.",bio:"Se deposita como sílice amorfa (fitolitos).",eco:"Segundo elemento más abundante de la corteza; base de arcillas y arenas.",conv:["SiO2"]},
+Co:{rol:"ben",abs:"Co²⁺",q:2,fun:"Esencial para Rhizobium (vitamina B₁₂), por eso mejora la fijación de N en leguminosas.",bio:"Centro de la cobalamina (B₁₂).",eco:"Esencial para rumiantes: pastos pobres en Co causan anemia en el ganado."},
+Se:{rol:"ben",abs:"SeO₄²⁻ (selenato), usa los transportadores de sulfato",fun:"No es esencial para plantas, pero sí para animales y humanos.",bio:"Selenocisteína (el aminoácido 21) y selenometionina. Glutatión peroxidasa.",eco:"Biofortificación de cultivos; hay plantas acumuladoras tóxicas para el ganado."},
+I:{rol:"ben",abs:"I⁻ y IO₃⁻",fun:"No es esencial para plantas; lo es para animales y humanos (hormonas tiroideas).",bio:"Tiroxina y triyodotironina, derivadas de la tirosina.",eco:"Suelos de montaña alejados del mar son pobres en yodo."},
+Al:{rol:"tox",abs:"Al³⁺ (soluble bajo pH 5,5)",q:3,fun:"Tóxico: detiene el crecimiento de la raíz y bloquea la absorción de P, Ca y Mg.",bio:"Se une a fosfatos y a la pared celular de la raíz.",eco:"Principal limitante de los suelos ácidos tropicales (Oxisoles, Ultisoles). Se neutraliza con encalado.",tox:[0,5.5]},
+Cd:{rol:"tox",abs:"Cd²⁺",fun:"Metal pesado sin función biológica; entra por los transportadores de Zn y Fe.",bio:"Desplaza al Zn en enzimas y se une a grupos –SH de la cisteína.",eco:"Llega con fertilizantes fosfatados y lodos. Se acumula en cacao, arroz y hortalizas de hoja; hay límites de exportación."},
+Pb:{rol:"tox",abs:"Pb²⁺",fun:"Metal pesado sin función biológica; queda retenido sobre todo en la raíz.",bio:"Inhibe enzimas con grupos –SH.",eco:"Contaminación por minería, pinturas y combustibles antiguos. Muy poco móvil en el suelo."},
+Hg:{rol:"tox",abs:"Hg²⁺ y metilmercurio",fun:"Metal pesado sin función biológica.",bio:"Alta afinidad por la cisteína.",eco:"El metilmercurio se bioacumula y biomagnifica en la cadena trófica acuática (minería de oro)."},
+As:{rol:"tox",abs:"Arsenato (AsO₄³⁻) y arsenito",fun:"El arsenato imita al fosfato y entra por sus transportadores.",bio:"Sustituye al fosfato y desacopla la síntesis de ATP.",eco:"En arroz inundado domina el arsenito, más móvil y tóxico."},
+Cr:{rol:"tox",abs:"Cr(III) y cromato Cr(VI)",fun:"Sin función en plantas. El Cr(VI) es tóxico y cancerígeno; el Cr(III) es poco móvil.",bio:"El cromato entra por los transportadores de sulfato.",eco:"Contaminación por curtiembres y galvanoplastia."}
+};
+const rolOf=e=>AG[e.sym]?AG[e.sym].rol:"no";
+function nivel(ph,r){ return ph>=r[0]&&ph<=r[1]?"alta":(ph>=r[0]-0.75&&ph<=r[1]+0.75)?"media":"baja"; }
+
+/* ---------- Química: lector de fórmulas ---------- */
+function parseFormula(str){
+  const s0=String(str||"").replace(/[₀-₉]/g,c=>"₀₁₂₃₄₅₆₇₈₉".indexOf(c)).replace(/\s+/g,"");
+  if(!s0) throw Error("Escribe una fórmula, por ejemplo Ca(H2PO4)2");
+  const total={};
+  for(const part of s0.split(/[·*]/)){ let s=part, i=0, coef=1;
+    const m=s.match(/^\d+(\.\d+)?(?=[A-Z(\[])/); if(m){coef=+m[0]; i=m[0].length}
+    const num=()=>{const k=s.slice(i).match(/^\d+(\.\d+)?/); if(!k) return 1; i+=k[0].length; return +k[0]};
+    const grp=()=>{ const o={};
+      while(i<s.length){ const c=s[i];
+        if(c==="("||c==="["){ i++; const inn=grp(); if(s[i]!==")"&&s[i]!=="]") throw Error("Falta cerrar un paréntesis"); i++; const k=num(); for(const e in inn) o[e]=(o[e]||0)+inn[e]*k; }
+        else if(c===")"||c==="]") break;
+        else if(/[A-Z]/.test(c)){ let sym=c; i++; if(i<s.length&&/[a-z]/.test(s[i])){sym+=s[i];i++}
+          if(!(sym in MASS)) throw Error("No existe el símbolo «"+sym+"». Revisa mayúsculas: Co es cobalto, CO es carbono y oxígeno.");
+          o[sym]=(o[sym]||0)+num(); }
+        else throw Error("No entiendo el carácter «"+c+"»"); }
+      return o; };
+    const o=grp(); if(i<s.length) throw Error("Sobra un paréntesis de cierre");
+    for(const e in o) total[e]=(total[e]||0)+o[e]*coef; }
+  return total; }
+const molar=o=>Object.entries(o).reduce((a,[e,k])=>a+MASS[e]*k,0);
+const mmOf=f=>molar(parseFormula(f));
+function factor(form,sym){ const o=parseFormula(form); return o[sym]*MASS[sym]/molar(o); }
+
+/* ---------- Aminoácidos: nombre, 3 letras, 1 letra, fórmula, pKa1 (α-COOH), pKa2 (α-NH3+), pKaR, tipo de R, clase, esencial ---------- */
+const AA=[["Glicina","Gly","G","C2H5NO2",2.34,9.60,null,"","Apolar",0],["Alanina","Ala","A","C3H7NO2",2.34,9.69,null,"","Apolar",0],["Valina","Val","V","C5H11NO2",2.32,9.62,null,"","Apolar",1],["Leucina","Leu","L","C6H13NO2",2.36,9.60,null,"","Apolar",1],["Isoleucina","Ile","I","C6H13NO2",2.36,9.68,null,"","Apolar",1],["Prolina","Pro","P","C5H9NO2",1.99,10.96,null,"","Apolar",0],["Metionina","Met","M","C5H11NO2S",2.28,9.21,null,"","Apolar, con azufre",1],["Fenilalanina","Phe","F","C9H11NO2",1.83,9.13,null,"","Aromático",1],["Triptófano","Trp","W","C11H12N2O2",2.38,9.39,null,"","Aromático",1],["Tirosina","Tyr","Y","C9H11NO3",2.20,9.11,10.07,"a","Aromático",0],["Serina","Ser","S","C3H7NO3",2.21,9.15,null,"","Polar sin carga",0],["Treonina","Thr","T","C4H9NO3",2.11,9.62,null,"","Polar sin carga",1],["Cisteína","Cys","C","C3H7NO2S",1.96,10.28,8.18,"a","Polar, con azufre",0],["Asparagina","Asn","N","C4H8N2O3",2.02,8.80,null,"","Polar sin carga",0],["Glutamina","Gln","Q","C5H10N2O3",2.17,9.13,null,"","Polar sin carga",0],["Aspartato","Asp","D","C4H7NO4",1.88,9.60,3.65,"a","Ácido",0],["Glutamato","Glu","E","C5H9NO4",2.19,9.67,4.25,"a","Ácido",0],["Lisina","Lys","K","C6H14N2O2",2.18,8.95,10.53,"b","Básico",1],["Arginina","Arg","R","C6H14N4O2",2.17,9.04,12.48,"b","Básico",0],["Histidina","His","H","C6H9N3O2",1.82,9.17,6.00,"b","Básico",1]
+].map(a=>({name:a[0],t:a[1],l:a[2],f:a[3],pk1:a[4],pk2:a[5],pkr:a[6],r:a[7],cls:a[8],ess:a[9]}));
+function pI(a){ const p=[a.pk1,a.pk2].concat(a.pkr==null?[]:[a.pkr]).sort((x,y)=>x-y); return a.r==="b"?(p[1]+p[2])/2:(p[0]+p[1])/2; }
+function carga(a,ph){ let q=1/(1+10**(ph-a.pk2))-1/(1+10**(a.pk1-ph));
+  if(a.r==="a") q-=1/(1+10**(a.pkr-ph)); if(a.r==="b") q+=1/(1+10**(ph-a.pkr)); return q; }
+
+/* ---------- Formato ---------- */
+const n=(x,d=3)=>Number.isFinite(x)?x.toLocaleString("es-CO",{maximumFractionDigits:d}):"—";
+const sci=x=>{ if(!Number.isFinite(x)||x===0) return n(x); const [m,e]=x.toExponential(2).split("e"); return m.replace(".",",")+" × 10"+sup(String(+e)); };
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const sub=f=>esc(f).replace(/(?<=[A-Za-z)\]])(\d+)/g,"<sub>$1</sub>");
+const pos=(v,nom)=>{ if(!(v>0)) throw Error(nom+" debe ser mayor que cero"); return v; };
+
+/* ---------- Calculadoras: cada una declara fórmula, explicación, entradas con ejemplo y el cálculo paso a paso ---------- */
+const PE={Ca:MASS.Ca/2,Mg:MASS.Mg/2,K:MASS.K,Na:MASS.Na};
+const CONV=[["P2O5","P"],["K2O","K"],["CaO","Ca"],["CaCO3","Ca"],["MgO","Mg"],["SO4","S"],["NO3","N"],["NH4","N"],["B2O3","B"],["SiO2","Si"]];
+const CALCS=[
+{id:"mm",area:"Química general",t:"Masa molar y composición porcentual",fx:"M = Σ (nᵢ × masa atómicaᵢ)   ·   %ᵢ = nᵢ × masaᵢ / M × 100",
+ ex:"Escribe la fórmula respetando mayúsculas. Acepta paréntesis e hidratos con punto medio o asterisco: CaSO4·2H2O. El porcentaje dice cuánto de cada elemento hay en 100 g del compuesto: así se obtiene el grado de un fertilizante.",
+ ins:[{id:"f",l:"Fórmula",v:"Ca(H2PO4)2",text:1}],
+ c:v=>{const o=parseFormula(v.f),M=molar(o); return {pasos:Object.entries(o).map(([s,k])=>`${s}: ${n(k)} × ${n(MASS[s])} = ${n(k*MASS[s])} g/mol → ${n(100*k*MASS[s]/M,2)} %`),res:[["Masa molar",n(M)+" g/mol"]]}}},
+{id:"mol",area:"Química general",t:"Gramos ↔ moles",fx:"n = m / M   ·   partículas = n × 6,022 × 10²³",
+ ex:"Divide la masa pesada entre la masa molar. Un mol siempre contiene el número de Avogadro de moléculas.",
+ ins:[{id:"f",l:"Fórmula",v:"KNO3",text:1},{id:"m",l:"Masa (g)",v:50}],
+ c:v=>{const M=mmOf(v.f),m=pos(v.m,"La masa"),x=m/M; return {pasos:[`M(${v.f}) = ${n(M)} g/mol`,`n = ${n(m)} g ÷ ${n(M)} g/mol = ${n(x,4)} mol`],res:[["Moles",n(x,4)+" mol"],["Partículas",sci(x*6.022e23)]]}}},
+{id:"sol",area:"Química general",t:"Preparar una solución molar",fx:"m (g) = M (mol/L) × V (L) × masa molar",
+ ex:"Pesa el resultado, disuelve en menos agua que el volumen final y afora hasta la marca. La molaridad se define por litro de solución, no de agua añadida.",
+ ins:[{id:"f",l:"Soluto",v:"NaCl",text:1},{id:"M",l:"Molaridad (mol/L)",v:0.5},{id:"V",l:"Volumen final (L)",v:0.25}],
+ c:v=>{const M=mmOf(v.f),g=pos(v.M,"La molaridad")*pos(v.V,"El volumen")*M; return {pasos:[`M(${v.f}) = ${n(M)} g/mol`,`m = ${n(v.M)} × ${n(v.V)} × ${n(M)} = ${n(g)} g`],res:[["Pesar",n(g)+" g de "+v.f]]}}},
+{id:"dil",area:"Química general",t:"Dilución",fx:"C₁ × V₁ = C₂ × V₂   →   V₁ = C₂ × V₂ / C₁",
+ ex:"La cantidad de soluto no cambia al añadir agua. C₁ y C₂ van en la misma unidad (mol/L, %, ppm); V₁ sale en la unidad de V₂.",
+ ins:[{id:"c1",l:"C₁ concentrada",v:1000},{id:"c2",l:"C₂ deseada",v:50},{id:"v2",l:"V₂ final (mL)",v:500}],
+ c:v=>{pos(v.c1,"C₁");pos(v.c2,"C₂");pos(v.v2,"V₂"); if(v.c2>v.c1) throw Error("C₂ no puede ser mayor que C₁: diluir solo baja la concentración"); const x=v.c2*v.v2/v.c1; return {pasos:[`V₁ = ${n(v.c2)} × ${n(v.v2)} ÷ ${n(v.c1)} = ${n(x)} mL`],res:[["Tomar de la solución madre",n(x)+" mL"],["Completar con agua",n(v.v2-x)+" mL"]]}}},
+{id:"ph",area:"Química general",t:"pH, pOH y concentración de H⁺",fx:"pH = −log[H⁺]   ·   pH + pOH = 14   ·   [H⁺] = 10^(−pH)",
+ ex:"Cada unidad de pH es un factor de 10 en [H⁺]: un suelo de pH 5 tiene diez veces más H⁺ que uno de pH 6. La suma 14 vale a 25 °C.",
+ ins:[{id:"ph",l:"pH",v:5.2}],
+ c:v=>{ if(!(v.ph>=0&&v.ph<=14)) throw Error("Usa un pH entre 0 y 14"); const h=10**-v.ph; return {pasos:[`[H⁺] = 10^(−${n(v.ph)}) = ${sci(h)} mol/L`,`pOH = 14 − ${n(v.ph)} = ${n(14-v.ph)}`,`[OH⁻] = 10^(−${n(14-v.ph)}) = ${sci(10**(v.ph-14))} mol/L`],res:[["[H⁺]",sci(h)+" mol/L"],["pOH",n(14-v.ph)]]}}},
+{id:"deb",area:"Química general",t:"pH de un ácido débil",fx:"pH ≈ ½ (pKa − log C)",
+ ex:"Válida cuando el ácido se disocia poco (C mucho mayor que Ka). Para un ácido fuerte la disociación es total y pH = −log C.",
+ ins:[{id:"pka",l:"pKa",v:4.76},{id:"c",l:"Concentración (mol/L)",v:0.1}],
+ c:v=>{pos(v.c,"La concentración"); const x=0.5*(v.pka-Math.log10(v.c)); return {pasos:[`log C = log ${n(v.c)} = ${n(Math.log10(v.c))}`,`pH = ½ (${n(v.pka)} − (${n(Math.log10(v.c))})) = ${n(x,2)}`],res:[["pH",n(x,2)],["Si fuera ácido fuerte",n(-Math.log10(v.c),2)]]}}},
+{id:"hh",area:"Bioquímica",t:"Amortiguadores: Henderson–Hasselbalch",fx:"pH = pKa + log ([A⁻] / [HA])",
+ ex:"Un amortiguador resiste cambios de pH cerca de su pKa (±1 unidad). Con base y ácido en partes iguales, pH = pKa. El ejemplo es acetato.",
+ ins:[{id:"pka",l:"pKa",v:4.76},{id:"a",l:"[A⁻] base conjugada",v:0.15},{id:"ha",l:"[HA] ácido",v:0.10}],
+ c:v=>{pos(v.a,"[A⁻]");pos(v.ha,"[HA]"); const r=v.a/v.ha,x=v.pka+Math.log10(r); return {pasos:[`[A⁻]/[HA] = ${n(v.a)} ÷ ${n(v.ha)} = ${n(r)}`,`pH = ${n(v.pka)} + log ${n(r)} = ${n(x,2)}`],res:[["pH",n(x,2)]],nota:Math.abs(x-v.pka)>1?"Fuera de pKa ± 1 la capacidad amortiguadora es baja.":""}}},
+{id:"pi",area:"Bioquímica",t:"Carga neta y punto isoeléctrico de un aminoácido",fx:"fracción protonada = 1 / (1 + 10^(pH − pKa))   ·   pI = promedio de los pKa que rodean la forma neutra",
+ ex:"Bajo su pI el aminoácido tiene carga positiva; sobre su pI, negativa. Cada grupo aporta según qué tan lejos esté el pH de su pKa.",
+ ins:[{id:"aa",l:"Aminoácido",v:"Lys",opts:AA.map(a=>[a.t,a.name])},{id:"ph",l:"pH",v:7}],
+ c:v=>{const a=AA.find(x=>x.t===v.aa),p=pI(a),q=carga(a,v.ph); const ps=[`α-COOH (pKa ${n(a.pk1)}): carga ${n(-1/(1+10**(a.pk1-v.ph)),2)}`,`α-NH₃⁺ (pKa ${n(a.pk2)}): carga +${n(1/(1+10**(v.ph-a.pk2)),2)}`];
+  if(a.r==="a") ps.push(`Cadena lateral ácida (pKa ${n(a.pkr)}): carga ${n(-1/(1+10**(a.pkr-v.ph)),2)}`); if(a.r==="b") ps.push(`Cadena lateral básica (pKa ${n(a.pkr)}): carga +${n(1/(1+10**(v.ph-a.pkr)),2)}`);
+  return {pasos:ps,res:[["Carga neta a pH "+n(v.ph),(q>0?"+":"")+n(q,2)],["Punto isoeléctrico",n(p,2)]],nota:"En electroforesis migra hacia el "+(q>0.05?"cátodo (−)":q<-0.05?"ánodo (+)":"ninguno de los polos: está cerca de su pI")+"."}}},
+{id:"pc",area:"Bioquímica",t:"Proteína cruda a partir del nitrógeno",fx:"Proteína cruda (%) = N Kjeldahl (%) × 6,25",
+ ex:"Las proteínas tienen en promedio 16 % de N, y 100 ÷ 16 = 6,25. Algunos alimentos usan otro factor (trigo 5,7; lácteos 6,38).",
+ ins:[{id:"n",l:"N total (%)",v:2.4},{id:"f",l:"Factor",v:6.25}],
+ c:v=>({pasos:[`PC = ${n(v.n)} × ${n(v.f)} = ${n(v.n*v.f,2)} %`],res:[["Proteína cruda",n(v.n*v.f,2)+" %"]]})},
+{id:"ppm",area:"Suelos y fertilización",t:"De ppm en el análisis a kg por hectárea",fx:"kg/ha = ppm × profundidad (m) × densidad aparente (g/cm³) × 10",
+ ex:"Una hectárea a 20 cm con densidad 1,25 pesa 2 500 000 kg. Como ppm es mg/kg, cada ppm equivale a 2,5 kg/ha en esa capa.",
+ ins:[{id:"p",l:"Resultado (ppm = mg/kg)",v:12},{id:"d",l:"Profundidad (cm)",v:20},{id:"da",l:"Densidad aparente (g/cm³)",v:1.25}],
+ c:v=>{pos(v.d,"La profundidad");pos(v.da,"La densidad"); const ms=10000*(v.d/100)*v.da*1000,x=v.p*ms/1e6; return {pasos:[`Masa de suelo = 10 000 m² × ${n(v.d/100)} m × ${n(v.da*1000)} kg/m³ = ${n(ms,0)} kg/ha`,`kg/ha = ${n(v.p)} mg/kg × ${n(ms,0)} kg ÷ 1 000 000 = ${n(x,2)}`],res:[["Cantidad en la capa",n(x,2)+" kg/ha"]]}}},
+{id:"ox",area:"Suelos y fertilización",t:"Óxido ↔ elemento",fx:"factor = átomos × masa atómica del elemento / masa molar del óxido",
+ ex:"Los fertilizantes declaran P como P₂O₅ y K como K₂O. Para saber cuánto elemento real aplicas, multiplica por el factor; para ir al revés, divide.",
+ ins:[{id:"k",l:"Conversión",v:"P2O5>P",opts:CONV.map(([a,b])=>[a+">"+b,a+" → "+b])},{id:"x",l:"Cantidad (kg o %)",v:46}],
+ c:v=>{const [a,b]=v.k.split(">"),o=parseFormula(a),f=factor(a,b); return {pasos:[`M(${a}) = ${n(molar(o))} g/mol`,`factor = ${o[b]} × ${n(MASS[b])} ÷ ${n(molar(o))} = ${n(f,4)}`,`${n(v.x)} de ${a} × ${n(f,4)} = ${n(v.x*f,2)} de ${b}`,`${n(v.x)} de ${b} ÷ ${n(f,4)} = ${n(v.x/f,2)} de ${a}`],res:[[`${n(v.x)} ${a} equivalen a`,n(v.x*f,2)+" "+b],[`${n(v.x)} ${b} equivalen a`,n(v.x/f,2)+" "+a]]}}},
+{id:"fer",area:"Suelos y fertilización",t:"Dosis de fertilizante comercial",fx:"kg de producto = dosis del nutriente (kg/ha) × área (ha) / (grado % / 100)",
+ ex:"El grado es el porcentaje del nutriente en el saco, en la misma forma en que expresas la dosis (N, P₂O₅, K₂O). El ejemplo es urea para 120 kg N/ha.",
+ ins:[{id:"d",l:"Dosis (kg/ha)",v:120},{id:"g",l:"Grado (%)",v:46},{id:"a",l:"Área (ha)",v:2.5},{id:"s",l:"Saco (kg)",v:50}],
+ c:v=>{pos(v.g,"El grado");pos(v.a,"El área");pos(v.s,"El saco"); if(v.g>100) throw Error("El grado no puede pasar de 100 %"); const h=v.d/(v.g/100),t=h*v.a; return {pasos:[`Por hectárea: ${n(v.d)} ÷ ${n(v.g/100)} = ${n(h,1)} kg de producto`,`Para ${n(v.a)} ha: ${n(h,1)} × ${n(v.a)} = ${n(t,1)} kg`,`Sacos: ${n(t,1)} ÷ ${n(v.s)} = ${n(t/v.s,1)}`],res:[["Producto por hectárea",n(h,1)+" kg"],["Total",n(t,1)+" kg ≈ "+Math.ceil(t/v.s)+" sacos"]]}}},
+{id:"nut",area:"Suelos y fertilización",t:"Solución nutritiva en ppm (fertirriego)",fx:"g de fertilizante = ppm deseados × litros / (% del elemento × 10)",
+ ex:"1 ppm es 1 mg por litro. Usa el porcentaje del elemento, no del óxido. El ejemplo: 150 ppm de N con nitrato de potasio (13 % N) en un tanque de 1000 L.",
+ ins:[{id:"p",l:"ppm deseados",v:150},{id:"g",l:"Elemento en el fertilizante (%)",v:13},{id:"l",l:"Volumen (L)",v:1000}],
+ c:v=>{pos(v.g,"El porcentaje");pos(v.l,"El volumen"); const x=v.p*v.l/(v.g*10); return {pasos:[`Elemento necesario = ${n(v.p)} mg/L × ${n(v.l)} L = ${n(v.p*v.l/1000,1)} g`,`Fertilizante = ${n(v.p*v.l/1000,1)} g ÷ ${n(v.g/100)} = ${n(x,1)} g`],res:[["Disolver",n(x,1)+" g ("+n(x/1000,3)+" kg)"]]}}},
+{id:"cic",area:"Suelos y fertilización",t:"Bases intercambiables, CICE y saturaciones",fx:"cmol(+)/kg = ppm / (peso equivalente × 10)   ·   peso equivalente = masa atómica / valencia",
+ ex:"cmol(+)/kg es lo mismo que meq/100 g. La CICE suma las bases y la acidez intercambiable. Saturación de Al sobre 25–30 % afecta a la mayoría de los cultivos.",
+ ins:[{id:"Ca",l:"Ca (ppm)",v:800},{id:"Mg",l:"Mg (ppm)",v:120},{id:"K",l:"K (ppm)",v:78},{id:"Na",l:"Na (ppm)",v:23},{id:"Al",l:"Al + H (cmol(+)/kg)",v:0.5}],
+ c:v=>{const c={}; const ps=["Ca","Mg","K","Na"].map(e=>{c[e]=v[e]/(PE[e]*10); return `${e}: ${n(v[e])} ÷ (${n(PE[e],2)} × 10) = ${n(c[e],2)} cmol(+)/kg`});
+  const b=c.Ca+c.Mg+c.K+c.Na,t=b+v.Al; pos(t,"La suma de cationes"); ps.push(`Bases = ${n(b,2)} · CICE = ${n(b,2)} + ${n(v.Al)} = ${n(t,2)} cmol(+)/kg`);
+  return {pasos:ps,res:[["CICE",n(t,2)+" cmol(+)/kg"],["Saturación de bases",n(100*b/t,1)+" %"],["Saturación de Al",n(100*v.Al/t,1)+" %"],["Ca/Mg",n(c.Ca/c.Mg,1)],["Mg/K",n(c.Mg/c.K,1)],["(Ca+Mg)/K",n((c.Ca+c.Mg)/c.K,1)]]}}},
+{id:"cal",area:"Suelos y fertilización",t:"Requerimiento de cal por aluminio intercambiable",fx:"t CaCO₃/ha = factor × Al (cmol(+)/kg)   ·   dosis comercial = dosis × 100 / PRNT",
+ ex:"Criterio de Kamprath para la capa de 0–20 cm. El factor va de 1,5 a 2 según el cultivo y el suelo. El PRNT corrige por pureza y finura de la cal. Es una guía: la dosis final la define el laboratorio o un ensayo de incubación.",
+ ins:[{id:"al",l:"Al intercambiable (cmol(+)/kg)",v:1.8},{id:"f",l:"Factor",v:1.5},{id:"pr",l:"PRNT de la cal (%)",v:85}],
+ c:v=>{pos(v.pr,"El PRNT"); const d=v.f*v.al,r=d*100/v.pr; return {pasos:[`CaCO₃ puro = ${n(v.f)} × ${n(v.al)} = ${n(d,2)} t/ha`,`Cal comercial = ${n(d,2)} × 100 ÷ ${n(v.pr)} = ${n(r,2)} t/ha`],res:[["Cal comercial",n(r,2)+" t/ha"]]}}},
+{id:"cn",area:"Ecología",t:"Relación C/N y materia orgánica",fx:"C/N = % C ÷ % N   ·   materia orgánica (%) = C orgánico (%) × 1,724",
+ ex:"Residuos con C/N bajo 20 liberan N al descomponerse; sobre 30 los microbios toman N del suelo y el cultivo puede quedar corto. El factor 1,724 supone 58 % de C en la materia orgánica.",
+ ins:[{id:"c",l:"C orgánico (%)",v:42},{id:"n",l:"N total (%)",v:0.7}],
+ c:v=>{pos(v.n,"El N"); const r=v.c/v.n; return {pasos:[`C/N = ${n(v.c)} ÷ ${n(v.n)} = ${n(r,1)}`,`MO = ${n(v.c)} × 1,724 = ${n(v.c*1.724,1)} %`],res:[["C/N",n(r,1)+" : 1"],["Materia orgánica",n(v.c*1.724,1)+" %"]],nota:r<20?"Mineralización neta: el residuo libera N.":r<=30?"Zona de equilibrio entre mineralización e inmovilización.":"Inmovilización neta: conviene añadir N o compostar antes (el ejemplo es paja de cereal)."}}},
+{id:"sha",area:"Ecología",t:"Diversidad: índices de Shannon y Simpson",fx:"H′ = −Σ pᵢ ln pᵢ   ·   J = H′ / ln S   ·   Simpson = 1 − Σ pᵢ²",
+ ex:"pᵢ es la proporción de individuos de cada especie. H′ sube con más especies y con abundancias parejas. J va de 0 a 1 e indica qué tan parejo es el reparto.",
+ ins:[{id:"a",l:"Individuos por especie, separados por coma",v:"45, 30, 15, 8, 2",text:1}],
+ c:v=>{const a=v.a.split(/[,;\s]+/).filter(Boolean).map(Number); if(a.some(x=>!(x>0))) throw Error("Escribe solo números positivos separados por coma"); if(a.length<2) throw Error("Se necesitan al menos dos especies");
+  const N=a.reduce((x,y)=>x+y,0),p=a.map(x=>x/N),H=-p.reduce((s,x)=>s+x*Math.log(x),0),D=p.reduce((s,x)=>s+x*x,0);
+  return {pasos:[`N = ${n(N)} individuos, S = ${a.length} especies`,`pᵢ = ${p.map(x=>n(x,3)).join(" · ")}`,`H′ = −Σ pᵢ ln pᵢ = ${n(H,3)}`,`J = ${n(H,3)} ÷ ln ${a.length} = ${n(H/Math.log(a.length),3)}`],res:[["Shannon H′",n(H,3)],["Equidad J",n(H/Math.log(a.length),3)],["Simpson 1 − D",n(1-D,3)]]}}},
+{id:"hum",area:"Suelos y fertilización",t:"Humedad y porosidad del suelo",fx:"θg = (Ph − Ps) / Ps × 100   ·   θv = θg × Da   ·   porosidad = (1 − Da / Dr) × 100",
+ ex:"Ph y Ps son el peso de la muestra húmeda y seca a 105 °C. La humedad volumétrica dice cuántos mm de agua hay por cada 10 cm de suelo. Dr suele tomarse como 2,65 g/cm³.",
+ ins:[{id:"ph",l:"Peso húmedo (g)",v:125},{id:"ps",l:"Peso seco (g)",v:100},{id:"da",l:"Densidad aparente (g/cm³)",v:1.3},{id:"dr",l:"Densidad real (g/cm³)",v:2.65}],
+ c:v=>{pos(v.ps,"El peso seco");pos(v.dr,"La densidad real"); if(v.ph<v.ps) throw Error("El peso húmedo no puede ser menor que el seco"); const g=(v.ph-v.ps)/v.ps*100,vo=g*v.da,p=(1-v.da/v.dr)*100;
+  return {pasos:[`θg = (${n(v.ph)} − ${n(v.ps)}) ÷ ${n(v.ps)} × 100 = ${n(g,1)} %`,`θv = ${n(g,1)} × ${n(v.da)} = ${n(vo,1)} %`,`Porosidad = (1 − ${n(v.da)} ÷ ${n(v.dr)}) × 100 = ${n(p,1)} %`],res:[["Humedad gravimétrica",n(g,1)+" %"],["Humedad volumétrica",n(vo,1)+" % = "+n(vo,1)+" mm por cada 10 cm"],["Porosidad total",n(p,1)+" %"]]}}},
+{id:"ras",area:"Riego y agua",t:"Calidad del agua de riego: RAS y salinidad",fx:"meq/L = mg/L ÷ peso equivalente   ·   RAS = Na / √((Ca + Mg) / 2)",
+ ex:"La RAS compara el sodio con el calcio y el magnesio, todos en meq/L. Un valor alto dispersa las arcillas y sella el suelo. La conductividad (CE) mide el riesgo de salinidad. Sólidos disueltos ≈ CE × 640.",
+ ins:[{id:"na",l:"Na (mg/L)",v:115},{id:"ca",l:"Ca (mg/L)",v:80},{id:"mg",l:"Mg (mg/L)",v:24},{id:"ce",l:"CE (dS/m)",v:1.1}],
+ c:v=>{const na=v.na/MASS.Na,ca=v.ca/PE.Ca,mg=v.mg/PE.Mg; pos(ca+mg,"Ca + Mg"); const r=na/Math.sqrt((ca+mg)/2);
+  const C=v.ce<0.25?"C1, baja":v.ce<0.75?"C2, media":v.ce<2.25?"C3, alta":"C4, muy alta",S=r<10?"S1, bajo":r<18?"S2, medio":r<26?"S3, alto":"S4, muy alto";
+  return {pasos:[`Na = ${n(v.na)} ÷ ${n(MASS.Na,2)} = ${n(na,2)} meq/L`,`Ca = ${n(v.ca)} ÷ ${n(PE.Ca,2)} = ${n(ca,2)} meq/L`,`Mg = ${n(v.mg)} ÷ ${n(PE.Mg,2)} = ${n(mg,2)} meq/L`,`RAS = ${n(na,2)} ÷ √((${n(ca,2)} + ${n(mg,2)}) ÷ 2) = ${n(r,2)}`],res:[["RAS",n(r,2)],["Salinidad",C],["Sodio",S],["Sólidos disueltos",n(v.ce*640,0)+" mg/L"]],nota:"Clases del diagrama de Riverside (USDA). Los cortes de sodio mostrados valen para CE baja; con CE alta el límite de cada clase baja."}}},
+{id:"etc",area:"Riego y agua",t:"Evapotranspiración del cultivo y volumen de riego",fx:"ETc = Kc × ETo   ·   1 mm = 10 m³/ha   ·   volumen bruto = ETc × 10 × área / eficiencia",
+ ex:"ETo es la evapotranspiración de referencia de la estación; Kc depende del cultivo y de su etapa (FAO 56). La eficiencia ronda 90 % en goteo, 75 % en aspersión y 50 % en gravedad.",
+ ins:[{id:"eto",l:"ETo (mm/día)",v:4.2},{id:"kc",l:"Kc",v:1.05},{id:"a",l:"Área (ha)",v:3},{id:"ef",l:"Eficiencia (%)",v:90}],
+ c:v=>{pos(v.ef,"La eficiencia");pos(v.a,"El área"); const e=v.eto*v.kc,vol=e*10*v.a/(v.ef/100); return {pasos:[`ETc = ${n(v.kc)} × ${n(v.eto)} = ${n(e,2)} mm/día`,`Neto = ${n(e,2)} × 10 × ${n(v.a)} = ${n(e*10*v.a,1)} m³/día`,`Bruto = ${n(e*10*v.a,1)} ÷ ${n(v.ef/100)} = ${n(vol,1)} m³/día`],res:[["ETc",n(e,2)+" mm/día"],["Volumen a aplicar",n(vol,1)+" m³/día"]]}}},
+{id:"lam",area:"Riego y agua",t:"Lámina y frecuencia de riego",fx:"LAA = (CC − PMP) / 100 × Da × profundidad (mm)   ·   lámina neta = LAA × agotamiento   ·   frecuencia = lámina neta / ETc",
+ ex:"CC y PMP son la humedad gravimétrica a capacidad de campo y en el punto de marchitez. LAA es el agua aprovechable. Se riega cuando el cultivo ha gastado la fracción permitida, normalmente 30 a 50 %.",
+ ins:[{id:"cc",l:"CC (%)",v:28},{id:"pmp",l:"PMP (%)",v:14},{id:"da",l:"Densidad aparente",v:1.3},{id:"pr",l:"Profundidad de raíces (cm)",v:40},{id:"ag",l:"Agotamiento permitido (%)",v:50},{id:"etc",l:"ETc (mm/día)",v:4.5}],
+ c:v=>{pos(v.etc,"La ETc"); if(v.cc<=v.pmp) throw Error("CC debe ser mayor que PMP"); const l=(v.cc-v.pmp)/100*v.da*v.pr*10,ne=l*v.ag/100; return {pasos:[`LAA = (${n(v.cc)} − ${n(v.pmp)}) ÷ 100 × ${n(v.da)} × ${n(v.pr*10)} mm = ${n(l,1)} mm`,`Lámina neta = ${n(l,1)} × ${n(v.ag/100)} = ${n(ne,1)} mm`,`Frecuencia = ${n(ne,1)} ÷ ${n(v.etc)} = ${n(ne/v.etc,1)} días`],res:[["Agua aprovechable",n(l,1)+" mm"],["Lámina neta por riego",n(ne,1)+" mm = "+n(ne*10,0)+" m³/ha"],["Regar cada",n(ne/v.etc,1)+" días"]]}}},
+{id:"den",area:"Producción de cultivos",t:"Densidad de siembra",fx:"plantas/ha = 10 000 / (distancia entre surcos × distancia entre plantas)",
+ ex:"Las distancias van en metros. En tresbolillo (triángulo) caben 15,5 % más plantas con la misma distancia. El ejemplo es café a 1,5 × 1,0 m.",
+ ins:[{id:"a",l:"Entre surcos (m)",v:1.5},{id:"b",l:"Entre plantas (m)",v:1.0},{id:"ha",l:"Área (ha)",v:2}],
+ c:v=>{pos(v.a,"La distancia");pos(v.b,"La distancia"); const d=10000/(v.a*v.b); return {pasos:[`Área por planta = ${n(v.a)} × ${n(v.b)} = ${n(v.a*v.b,3)} m²`,`Plantas/ha = 10 000 ÷ ${n(v.a*v.b,3)} = ${n(d,0)}`],res:[["Densidad",n(d,0)+" plantas/ha"],["Total en "+n(v.ha)+" ha",n(d*v.ha,0)+" plantas"],["En tresbolillo con lado "+n(v.b)+" m",n(10000/(v.b*v.b*0.866),0)+" plantas/ha"]]}}},
+{id:"sem",area:"Producción de cultivos",t:"Semilla necesaria por hectárea",fx:"kg/ha = plantas/ha × peso de mil semillas (g) / 1 000 000 / (germinación × pureza)",
+ ex:"Germinación y pureza salen de la etiqueta del lote; su producto es el valor cultural. El ejemplo es maíz.",
+ ins:[{id:"p",l:"Plantas/ha deseadas",v:65000},{id:"pms",l:"Peso de mil semillas (g)",v:300},{id:"g",l:"Germinación (%)",v:92},{id:"pu",l:"Pureza (%)",v:98}],
+ c:v=>{pos(v.g,"La germinación");pos(v.pu,"La pureza"); const vc=v.g*v.pu/10000,b=v.p*v.pms/1e6; return {pasos:[`Semilla pura viable = ${n(v.p,0)} × ${n(v.pms)} g ÷ 1 000 000 = ${n(b,2)} kg`,`Valor cultural = ${n(v.g)} % × ${n(v.pu)} % = ${n(vc*100,1)} %`,`Semilla comercial = ${n(b,2)} ÷ ${n(vc,3)} = ${n(b/vc,2)} kg/ha`],res:[["Semilla",n(b/vc,2)+" kg/ha"]]}}},
+{id:"asp",area:"Producción de cultivos",t:"Calibración de la aspersora y dosis por bomba",fx:"L/ha = litros gastados × 10 000 / área de prueba (m²)   ·   producto por bomba = dosis × capacidad / (L/ha)",
+ ex:"Aplica agua sobre un área medida, al paso y presión de trabajo, y mide cuánto gastaste. Con ese volumen por hectárea sabes cuánto producto va en cada bomba.",
+ ins:[{id:"l",l:"Agua gastada (L)",v:2.5},{id:"a",l:"Área de prueba (m²)",v:100},{id:"d",l:"Dosis del producto (L o kg/ha)",v:1.5},{id:"c",l:"Capacidad de la bomba (L)",v:20}],
+ c:v=>{pos(v.l,"El agua gastada");pos(v.a,"El área");pos(v.c,"La capacidad"); const q=v.l*10000/v.a,pb=v.d*v.c/q; return {pasos:[`Volumen = ${n(v.l)} × 10 000 ÷ ${n(v.a)} = ${n(q,0)} L/ha`,`Bombas por hectárea = ${n(q,0)} ÷ ${n(v.c)} = ${n(q/v.c,1)}`,`Producto por bomba = ${n(v.d)} × ${n(v.c)} ÷ ${n(q,0)} = ${n(pb,3)}`],res:[["Volumen de aplicación",n(q,0)+" L/ha"],["Producto por bomba",n(pb*1000,0)+" mL o g"],["Bombas por hectárea",n(q/v.c,1)]]}}},
+{id:"gdd",area:"Producción de cultivos",t:"Grados día de crecimiento",fx:"GD = (Tmáx + Tmín) / 2 − Tbase   (si da negativo, vale 0)",
+ ex:"El desarrollo del cultivo y de muchas plagas depende del calor acumulado, no de los días calendario. La temperatura base cambia con la especie: cerca de 10 °C en maíz.",
+ ins:[{id:"mx",l:"Tmáx (°C)",v:28},{id:"mn",l:"Tmín (°C)",v:16},{id:"tb",l:"Tbase (°C)",v:10},{id:"d",l:"Días",v:90}],
+ c:v=>{const g=Math.max(0,(v.mx+v.mn)/2-v.tb); return {pasos:[`T media = (${n(v.mx)} + ${n(v.mn)}) ÷ 2 = ${n((v.mx+v.mn)/2,1)} °C`,`GD = ${n((v.mx+v.mn)/2,1)} − ${n(v.tb)} = ${n(g,1)} por día`,`Acumulado = ${n(g,1)} × ${n(v.d)} = ${n(g*v.d,0)}`],res:[["Grados día diarios",n(g,1)],["Acumulados en "+n(v.d)+" días",n(g*v.d,0)]]}}},
+{id:"pob",area:"Ecología",t:"Crecimiento poblacional",fx:"exponencial: N = N₀ e^(rt)   ·   logístico: N = K / (1 + ((K − N₀) / N₀) e^(−rt))",
+ ex:"r es la tasa intrínseca de crecimiento y K la capacidad de carga. Una plaga sin control crece de forma exponencial al comienzo y se frena al acercarse a K.",
+ ins:[{id:"n0",l:"N₀ inicial",v:50},{id:"r",l:"r (por unidad de tiempo)",v:0.3},{id:"t",l:"Tiempo",v:10},{id:"k",l:"K capacidad de carga",v:1000}],
+ c:v=>{pos(v.n0,"N₀");pos(v.k,"K"); const e=v.n0*Math.exp(v.r*v.t),l=v.k/(1+((v.k-v.n0)/v.n0)*Math.exp(-v.r*v.t)); return {pasos:[`e^(rt) = e^(${n(v.r)} × ${n(v.t)}) = ${n(Math.exp(v.r*v.t),2)}`,`Exponencial: ${n(v.n0)} × ${n(Math.exp(v.r*v.t),2)} = ${n(e,0)}`,`Logístico: ${n(v.k)} ÷ (1 + ${n((v.k-v.n0)/v.n0,2)} × ${n(Math.exp(-v.r*v.t),4)}) = ${n(l,0)}`],res:[["Modelo exponencial",n(e,0)+" individuos"],["Modelo logístico",n(l,0)+" individuos"],["Tiempo de duplicación",v.r>0?n(Math.log(2)/v.r,2):"—"]]}}},
+{id:"hw",area:"Genética",t:"Equilibrio de Hardy–Weinberg",fx:"p + q = 1   ·   p² + 2pq + q² = 1   ·   q = √(frecuencia de recesivos)",
+ ex:"Los individuos de fenotipo recesivo son q². De ahí salen las frecuencias de los alelos y la proporción de portadores heterocigotos. Supone apareamiento al azar, sin selección ni migración.",
+ ins:[{id:"r",l:"Individuos recesivos",v:16},{id:"t",l:"Total de individuos",v:100}],
+ c:v=>{pos(v.t,"El total"); if(v.r<0||v.r>v.t) throw Error("Los recesivos deben estar entre 0 y el total"); const q=Math.sqrt(v.r/v.t),p=1-q; return {pasos:[`q² = ${n(v.r)} ÷ ${n(v.t)} = ${n(v.r/v.t,4)}`,`q = √${n(v.r/v.t,4)} = ${n(q,3)}`,`p = 1 − ${n(q,3)} = ${n(p,3)}`,`2pq = 2 × ${n(p,3)} × ${n(q,3)} = ${n(2*p*q,3)}`],res:[["Alelo dominante p",n(p,3)],["Alelo recesivo q",n(q,3)],["Homocigotos dominantes p²",n(p*p*100,1)+" %"],["Heterocigotos 2pq",n(2*p*q*100,1)+" %"]]}}}
+];
+
+if(typeof document==="undefined"){ module.exports={EL,BY,MASS,AG,AA,CALCS,parseFormula,mmOf,factor,pI,carga,config,nivel,posOf}; }
+else {
+/* ---------- Interfaz ---------- */
+const $=s=>document.querySelector(s);
+const state={modo:"fam",ph:5.2,q:""};
+const hue=v=>`var(${v})`;
+
+function pintar(){
+  const pt=$("#pt"); const q=state.q.trim().toLowerCase();
+  pt.innerHTML=EL.map(e=>{ let h="--c-"+e.cat, dim=false, extra="";
+    if(state.modo==="rol"){ h=ROL[rolOf(e)][1]; dim=rolOf(e)==="no"; }
+    if(state.modo==="ph"){ const a=AG[e.sym]; if(a&&a.ph){ const l=nivel(state.ph,a.ph); h=l==="alta"?"--good":l==="media"?"--warn":"--bad"; extra=" · disponibilidad "+l; }
+      else if(a&&a.tox){ const t=state.ph>=a.tox[0]&&state.ph<a.tox[1]; h=t?"--bad":"--c-des"; dim=!t; extra=t?" · tóxico a este pH":""; } else dim=true; }
+    if(q&&!(e.name.toLowerCase().includes(q)||e.sym.toLowerCase()===q||String(e.Z)===q)) dim=true;
+    const row=e.f?e.p+3:e.p;
+    return `<button class="el${dim?" dim":""}" data-s="${e.sym}" style="grid-column:${e.g};grid-row:${row};--hue:${hue(h)}" aria-label="${e.name}, número atómico ${e.Z}${extra}"><span class="z">${e.Z}</span><span class="s">${e.sym}</span><span class="n">${e.name}</span></button>`; }).join("")
+    +`<div class="ph-slot" style="grid-column:3;grid-row:6">57–71</div><div class="ph-slot" style="grid-column:3;grid-row:7">89–103</div><div class="gap-row" style="grid-row:8"></div>`;
+  let lg;
+  if(state.modo==="fam") lg=Object.entries(CAT).map(([k,v])=>[`--c-${k}`,v[0]]);
+  else if(state.modo==="rol") lg=Object.values(ROL).map(([t,h])=>[h,t]);
+  else lg=[["--good","Alta disponibilidad"],["--warn","Disponibilidad media"],["--bad","Baja disponibilidad, o aluminio tóxico"]];
+  $("#leyenda").innerHTML=lg.map(([h,t])=>`<span><i style="--hue:${hue(h)}"></i>${t}</span>`).join("");
+  $("#phbox").hidden=state.modo!=="ph";
+  $("#nota-tabla").textContent=state.modo==="ph"?"Rangos aproximados para suelos minerales (diagrama clásico de disponibilidad según pH). Mueve el control: en suelo ácido faltan P, Ca, Mg y Mo y aparece aluminio tóxico; en suelo alcalino faltan Fe, Mn, Zn, Cu y B.":"Toca un elemento para ver sus propiedades, su papel en la planta y el suelo, las biomoléculas donde aparece y los cálculos asociados.";
+}
+
+function detalle(e){
+  const a=AG[e.sym], rol=ROL[rolOf(e)];
+  const kv=rows=>`<dl class="kv">${rows.filter(r=>r&&r[1]).map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join("")}</dl>`;
+  const aprox=e.Z>=84&&![90,91,92].includes(e.Z)||RADIO.has(e.Z);
+  let h=`<div class="d-head" style="--hue:${hue("--c-"+e.cat)}"><div class="d-sym">${e.sym}</div><div class="meta"><h2 id="d-nombre">${e.name}</h2><small>Z = ${e.Z} · ${aprox?"["+n(e.mass,0)+"]":n(e.mass,4)} g/mol · ${CAT[e.cat][0]}</small></div><form method="dialog"><button class="x" aria-label="Cerrar">Cerrar</button></form></div><div class="d-body">`;
+  h+=`<div><span class="pill" style="--hue:${hue(rol[1])}">${rol[0]}</span></div>`;
+  h+=`<div class="sec"><h3>Propiedades</h3>${kv([["Grupo y periodo",(e.f?"Bloque f":"Grupo "+e.g)+" · periodo "+e.p],["Bloque",e.block],["Configuración electrónica",`<span class="mono">${config(e.Z,e.sym)}</span>`],["Electronegatividad (Pauling)",e.en!=null?n(e.en,2):"Sin dato"],["Estados de oxidación comunes",e.ox.length?`<span class="mono">${e.ox.join(", ").replace(/-/g,"−")}</span>`:"Sin dato"],["Estado a 25 °C",e.state],a&&a.q?["Peso equivalente",`${n(e.mass,3)} ÷ ${a.q} = <b class="mono">${n(e.mass/a.q,2)}</b> g/eq`]:null,aprox?["Nota","Sin isótopos estables: se muestra el número másico del isótopo más estable."]:null])}</div>`;
+  if(a){
+    h+=`<div class="sec"><h3>En la planta y el suelo</h3>${kv([["Forma que absorbe la planta",a.abs],["Función",a.fun],["Deficiencia",a.def],["Movilidad",a.mov],a.ph?["pH de mayor disponibilidad",`${n(a.ph[0])} a ${n(a.ph[1])} (aproximado)`]:null,a.tox?["Toxicidad","Soluble y tóxico bajo pH "+n(a.tox[1])]:null,["Fuentes y fertilizantes",a.fue]])}</div>`;
+    h+=`<div class="sec"><h3>En bioquímica</h3><p>${a.bio}</p></div>`;
+    h+=`<div class="sec"><h3>En ecología</h3><p>${a.eco}</p></div>`;
+    if(a.conv) h+=`<div class="sec"><h3>Factores de conversión</h3><div class="tscroll"><table><tr><th>De</th><th>A</th><th class="num">Multiplica por</th><th class="num">Al revés</th></tr>${a.conv.map(f=>{const x=factor(f,e.sym);return `<tr><td>${sub(f)}</td><td>${e.sym}</td><td class="num">${n(x,4)}</td><td class="num">${n(1/x,4)}</td></tr>`}).join("")}</table></div></div>`;
+  } else h+=`<div class="sec"><h3>En la planta y el suelo</h3><p>No tiene una función conocida en las plantas ni es un contaminante agrícola habitual.</p></div>`;
+  h+=`<div class="sec"><h3>Cálculo rápido</h3><div class="mini"><label for="mini-g">Gramos de ${e.sym}</label><input class="field" id="mini-g" type="number" min="0" step="any" value="10"><span id="mini-o" class="mono"></span></div></div></div>`;
+  const d=$("#dlg"); d.innerHTML=h; const g=d.querySelector("#mini-g"), o=d.querySelector("#mini-o");
+  const up=()=>{const x=+g.value; o.textContent=x>0?`= ${n(x)} ÷ ${n(e.mass)} = ${n(x/e.mass,4)} mol`+(a&&a.q?` = ${n(x/e.mass*a.q,4)} eq`:""):"";}; g.oninput=up; up();
+  App.hooks.forEach(f=>f(e,d));
+  if(!d.open) d.showModal(); d.scrollTop=0;
+}
+
+function tablaAA(){
+  $("#taa").innerHTML=`<tr><th>Aminoácido</th><th>Código</th><th>Fórmula</th><th class="num">g/mol</th><th class="num">pKa α-COOH</th><th class="num">pKa α-NH₃⁺</th><th class="num">pKa R</th><th class="num">pI</th><th>Clase</th></tr>`+
+  AA.map(a=>`<tr><td>${a.name}${a.ess?" ★":""}</td><td class="mono">${a.t} · ${a.l}</td><td>${sub(a.f)}</td><td class="num">${n(mmOf(a.f),2)}</td><td class="num">${n(a.pk1,2)}</td><td class="num">${n(a.pk2,2)}</td><td class="num">${a.pkr==null?"—":n(a.pkr,2)}</td><td class="num">${n(pI(a),2)}</td><td>${a.cls}</td></tr>`).join("");
+}
+
+function calculadoras(){
+  const areas=["Todas",...new Set(CALCS.map(c=>c.area))];
+  $("#areas").innerHTML=areas.map((a,i)=>`<button aria-pressed="${i===0}" data-a="${a}">${a}</button>`).join("");
+  $("#calcs").innerHTML=CALCS.map(c=>`<article class="calc" data-a="${c.area}" id="c-${c.id}"><span class="area">${c.area}</span><h3>${c.t}</h3><div class="fx">${c.fx}</div><p>${c.ex}</p><div class="ins">${c.ins.map(i=>{const id=`${c.id}-${i.id}`;
+    const ctl=i.opts?`<select class="field" id="${id}">${i.opts.map(([v,t])=>`<option value="${v}"${v===i.v?" selected":""}>${t}</option>`).join("")}</select>`:`<input class="field" id="${id}" ${i.text?'type="text" autocapitalize="off" autocomplete="off" spellcheck="false"':'type="number" step="any" inputmode="decimal"'} value="${i.v}">`;
+    return `<label${i.text&&c.ins.length===1?' style="grid-column:1/-1"':""}>${i.l}${ctl}</label>`}).join("")}</div><div class="out" aria-live="polite"></div></article>`).join("");
+  CALCS.forEach(c=>{ const card=$("#c-"+c.id), out=card.querySelector(".out");
+    const run=()=>{ const v={}; c.ins.forEach(i=>{const el=$(`#${c.id}-${i.id}`); v[i.id]=(i.text||i.opts)?el.value:(el.value===""?NaN:+el.value)});
+      try{ if(c.ins.some(i=>!i.text&&!i.opts&&!Number.isFinite(v[i.id]))) throw Error("Completa todos los valores");
+        const r=c.c(v); out.innerHTML=`<ol>${r.pasos.map(p=>`<li>${esc(p)}</li>`).join("")}</ol><div class="res">${r.res.map(([k,x])=>`<div>${esc(k)}: <b>${esc(x)}</b></div>`).join("")}</div>${r.nota?`<p class="nota">${esc(r.nota)}</p>`:""}`; }
+      catch(err){ out.innerHTML=`<p class="err">${esc(err.message)}</p>`; } };
+    card.addEventListener("input",run); run(); });
+  $("#areas").addEventListener("click",ev=>{ const b=ev.target.closest("button"); if(!b) return;
+    document.querySelectorAll("#areas button").forEach(x=>x.setAttribute("aria-pressed",x===b));
+    document.querySelectorAll(".calc").forEach(c=>c.hidden=b.dataset.a!=="Todas"&&c.dataset.a!==b.dataset.a); });
+}
+
+function tab(name){ const bs=[...document.querySelectorAll("#tabs button")]; if(!bs.some(b=>b.dataset.tab===name)) name="tabla";
+  bs.forEach(b=>{const on=b.dataset.tab===name; b.setAttribute("aria-selected",on); $("#p-"+b.dataset.tab).hidden=!on;}); }
+function addTab(id,label,html){ const b=document.createElement("button"); b.setAttribute("role","tab"); b.dataset.tab=id; b.textContent=label; b.setAttribute("aria-selected","false"); $("#tabs").append(b);
+  const s=document.createElement("section"); s.id="p-"+id; s.hidden=true; s.className="panel"; s.innerHTML=html; $(".wrap").append(s); return s; }
+window.App={addTab,tab,detalle,hooks:[],$};
+document.addEventListener("click",ev=>{const c=ev.target.closest("[data-el]"); if(c&&BY[c.dataset.el]) detalle(BY[c.dataset.el]);});
+
+$("#tabs").addEventListener("click",ev=>{const b=ev.target.closest("button"); if(b){tab(b.dataset.tab); try{history.replaceState(null,"","#"+b.dataset.tab)}catch(e){}}});
+$("#modo").addEventListener("click",ev=>{const b=ev.target.closest("button"); if(!b) return; state.modo=b.dataset.m;
+  document.querySelectorAll("#modo button").forEach(x=>x.setAttribute("aria-pressed",x===b)); pintar();});
+$("#ph").addEventListener("input",ev=>{state.ph=+ev.target.value; $("#phv").textContent=n(state.ph,1); pintar();});
+$("#buscar").addEventListener("input",ev=>{state.q=ev.target.value; pintar();});
+$("#pt").addEventListener("click",ev=>{const b=ev.target.closest(".el"); if(b) detalle(BY[b.dataset.s]);});
+$("#dlg").addEventListener("click",ev=>{ if(ev.target===ev.currentTarget) ev.currentTarget.close(); });
+pintar(); tablaAA(); calculadoras();
+}
+</script>
+<script>
+"use strict";
+/* Biomoléculas (tabla bajo los aminoácidos) y rutas metabólicas con los elementos que usa cada enzima. */
+(function(){
+const chip=s=>`<button class="chipel" data-el="${s}">${s}</button>`;
+
+/* nombre, fórmula, clase, papel */
+const MOL=[
+["Glucosa","C6H12O6","Carbohidrato","Producto de la fotosíntesis y combustible de la respiración."],
+["Fructosa","C6H12O6","Carbohidrato","Isómero de la glucosa; abunda en frutos."],
+["Sacarosa","C12H22O11","Carbohidrato","Azúcar que viaja por el floema. Glucosa + fructosa."],
+["Unidad de almidón o celulosa","C6H10O5","Carbohidrato","Glucosa menos agua. Enlace α(1→4) en almidón, β(1→4) en celulosa."],
+["Ácido palmítico (16:0)","C16H32O2","Lípido","Ácido graso saturado; abunda en la palma de aceite."],
+["Ácido esteárico (18:0)","C18H36O2","Lípido","Saturado; manteca de cacao."],
+["Ácido oleico (18:1)","C18H34O2","Lípido","Monoinsaturado; aguacate, oliva."],
+["Ácido linoleico (18:2)","C18H32O2","Lípido","Omega 6, esencial; soya, maíz, girasol."],
+["Ácido linolénico (18:3)","C18H30O2","Lípido","Omega 3, esencial; membranas del cloroplasto."],
+["Glicerol","C3H8O3","Lípido","Esqueleto de triglicéridos y fosfolípidos."],
+["Adenina","C5H5N5","Base nitrogenada","Purina. Par con timina o uracilo."],
+["Guanina","C5H5N5O","Base nitrogenada","Purina. Par con citosina."],
+["Citosina","C4H5N3O","Base nitrogenada","Pirimidina."],
+["Timina","C5H6N2O2","Base nitrogenada","Pirimidina del ADN."],
+["Uracilo","C4H4N2O2","Base nitrogenada","Pirimidina del ARN."],
+["ATP","C10H16N5O13P3","Energía y coenzimas","Moneda de energía. Trabaja unido a Mg²⁺."],
+["NAD⁺","C21H27N7O14P2","Energía y coenzimas","Transportador de electrones de la respiración."],
+["Coenzima A","C21H36N7O16P3S","Energía y coenzimas","Lleva grupos acetilo; su grupo activo es un tiol (–SH)."],
+["Glutatión","C10H17N3O6S","Energía y coenzimas","Tripéptido Glu-Cys-Gly; antioxidante y detoxificación de herbicidas."],
+["Clorofila a","C55H72MgN4O5","Pigmento","Pigmento principal; un Mg en el centro del anillo."],
+["Clorofila b","C55H70MgN4O6","Pigmento","Pigmento accesorio."],
+["β-caroteno","C40H56","Pigmento","Protege del exceso de luz; provitamina A."],
+["Ácido indolacético (auxina)","C10H9NO2","Fitohormona","Elongación celular, dominancia apical, enraizamiento. Deriva del triptófano."],
+["Ácido giberélico GA₃","C19H22O6","Fitohormona","Elongación del tallo, germinación, rompe latencia."],
+["Zeatina (citoquinina)","C10H13N5O","Fitohormona","División celular, retrasa la senescencia. Deriva de la adenina."],
+["Ácido abscísico","C15H20O4","Fitohormona","Cierre de estomas ante sequía; latencia de semillas."],
+["Etileno","C2H4","Fitohormona","Gas; maduración de frutos climatéricos y senescencia. Deriva de la metionina."],
+["Ácido salicílico","C7H6O3","Fitohormona","Defensa frente a patógenos (resistencia sistémica adquirida)."],
+["Ácido jasmónico","C12H18O3","Fitohormona","Defensa frente a herbívoros y heridas."],
+["Urea","CH4N2O","Metabolito","Fertilizante y producto de excreción; la ureasa (Ni) la hidroliza."],
+["Ácido cítrico","C6H8O7","Metabolito","Ciclo de Krebs; las raíces lo exudan para solubilizar P y quelar Al."],
+["Ácido málico","C4H6O5","Metabolito","Almacén nocturno de CO₂ en plantas CAM; transportador en C4."]
+];
+const sec=App.$("#p-aminoacidos");
+const clases=["Todas",...new Set(MOL.map(m=>m[2]))];
+const div=document.createElement("div"); div.className="panel";
+div.innerHTML=`<h2>Otras biomoléculas</h2><p class="lede">Azúcares, lípidos, bases, coenzimas, pigmentos y fitohormonas. La masa molar y el porcentaje de nitrógeno se calculan a partir de la fórmula.</p>
+<div class="chips" id="molc">${clases.map((c,i)=>`<button aria-pressed="${i===0}" data-c="${c}">${c}</button>`).join("")}</div><div class="tscroll"><table id="tmol"></table></div>`;
+sec.append(div);
+function pinta(cl){ App.$("#tmol").innerHTML=`<tr><th>Molécula</th><th>Fórmula</th><th class="num">g/mol</th><th class="num">% C</th><th class="num">% N</th><th>Clase</th><th class="wrap-ok">Papel en la planta</th></tr>`+
+  MOL.filter(m=>cl==="Todas"||m[2]===cl).map(m=>{const o=parseFormula(m[1]),M=molar(o);
+    return `<tr><td>${m[0]}</td><td>${sub(m[1])}</td><td class="num">${n(M,2)}</td><td class="num">${n(100*o.C*MASS.C/M,1)}</td><td class="num">${o.N?n(100*o.N*MASS.N/M,1):"—"}</td><td>${m[2]}</td><td class="wrap-ok">${m[3]}</td></tr>`}).join(""); }
+pinta("Todas");
+App.$("#molc").addEventListener("click",ev=>{const b=ev.target.closest("button"); if(!b) return;
+  document.querySelectorAll("#molc button").forEach(x=>x.setAttribute("aria-pressed",x===b)); pinta(b.dataset.c);});
+
+/* ---------- Rutas: nombre, lugar, ecuación global, pasos [texto, elementos], cierre ---------- */
+const RUTAS=[
+{t:"Fase luminosa de la fotosíntesis",lugar:"Membrana del tilacoide",eq:"2 H₂O + 2 NADP⁺ + 3 ADP + 3 Pᵢ + luz → O₂ + 2 NADPH + 3 ATP",
+ pasos:[["Las clorofilas de la antena captan la luz y pasan la energía al centro de reacción.",["Mg","N"]],
+ ["Fotosistema II (P680): el complejo que rompe el agua libera O₂, 4 H⁺ y 4 electrones.",["Mn","Ca","Cl"]],
+ ["La plastoquinona lleva los electrones al citocromo b₆f, que bombea H⁺ al lumen.",["Fe","S"]],
+ ["La plastocianina lleva los electrones al fotosistema I.",["Cu"]],
+ ["Fotosistema I (P700): un segundo fotón impulsa los electrones hasta la ferredoxina.",["Fe","S"]],
+ ["La ferredoxina-NADP⁺ reductasa forma NADPH.",["Fe"]],
+ ["La ATP sintasa usa el gradiente de H⁺ para formar ATP (fotofosforilación).",["Mg","P"]]],
+ fin:"Aquí se ve por qué la falta de Mg, Fe o Mn produce clorosis: sin ellos no hay clorofila ni transporte de electrones."},
+{t:"Ciclo de Calvin",lugar:"Estroma del cloroplasto",eq:"3 CO₂ + 9 ATP + 6 NADPH → 1 gliceraldehído-3-fosfato + 9 ADP + 8 Pᵢ + 6 NADP⁺",
+ pasos:[["Carboxilación: la rubisco une CO₂ a la ribulosa-1,5-bisfosfato y forma dos moléculas de 3-fosfoglicerato.",["Mg","C"]],
+ ["Reducción: el 3-fosfoglicerato pasa a gliceraldehído-3-fosfato gastando ATP y NADPH.",["P"]],
+ ["Regeneración: cinco de cada seis triosas rehacen la ribulosa-1,5-bisfosfato con más ATP.",["P","Mg"]],
+ ["La triosa que sobra sale al citosol para formar sacarosa, o se queda como almidón.",["P","K"]]],
+ fin:"La rubisco es la proteína más abundante de la hoja y concentra buena parte de su nitrógeno. También fija O₂ (fotorrespiración), lo que resta eficiencia a las plantas C3 con calor."},
+{t:"Plantas C3, C4 y CAM",lugar:"Mesófilo y vaina del haz",eq:"C4 y CAM: PEP + HCO₃⁻ → oxalacetato (PEP carboxilasa), antes del ciclo de Calvin",
+ pasos:[["C3: la rubisco fija el CO₂ directamente; el primer producto tiene 3 carbonos. Arroz, trigo, papa, café, soya, fríjol.",["C"]],
+ ["C4: la PEP carboxilasa fija el CO₂ en el mesófilo como ácido de 4 carbonos, que lo libera concentrado junto a la rubisco en la vaina del haz. Maíz, caña, sorgo, pastos tropicales.",["Mg","Mn"]],
+ ["CAM: fija el CO₂ de noche como malato y lo usa de día con los estomas cerrados. Piña, sábila, cactus, pitahaya.",["C"]],
+ ["Las C4 casi no tienen fotorrespiración y usan mejor el agua y el nitrógeno; las CAM son las más eficientes con el agua.",["N"]]],
+ fin:"Las C4 necesitan sodio en cantidades mínimas para regenerar el PEP."},
+{t:"Glucólisis",lugar:"Citosol",eq:"Glucosa + 2 NAD⁺ + 2 ADP + 2 Pᵢ → 2 piruvato + 2 NADH + 2 ATP + 2 H₂O",
+ pasos:[["Hexoquinasa: fosforila la glucosa con ATP.",["Mg","P"]],["Fosfoglucosa isomerasa: glucosa-6-P a fructosa-6-P.",[]],
+ ["Fosfofructoquinasa: segundo ATP; es el paso que regula la ruta.",["Mg","P"]],["Aldolasa: parte la fructosa-1,6-bisfosfato en dos triosas.",[]],
+ ["Triosa fosfato isomerasa: iguala las dos triosas a gliceraldehído-3-P.",[]],
+ ["Gliceraldehído-3-P deshidrogenasa: oxida y añade fosfato; forma NADH. Su sitio activo es una cisteína.",["S","P"]],
+ ["Fosfoglicerato quinasa: primer ATP ganado.",["Mg"]],["Fosfoglicerato mutasa: mueve el fosfato del carbono 3 al 2.",[]],
+ ["Enolasa: quita agua y forma fosfoenolpiruvato.",["Mg"]],["Piruvato quinasa: segundo ATP ganado.",["Mg","K"]]],
+ fin:"Sin oxígeno (raíz inundada) el piruvato pasa a etanol o lactato y la planta solo obtiene 2 ATP por glucosa."},
+{t:"Ciclo de Krebs",lugar:"Matriz mitocondrial",eq:"Acetil-CoA + 3 NAD⁺ + FAD + ADP + Pᵢ + 2 H₂O → 2 CO₂ + 3 NADH + FADH₂ + ATP + CoA",
+ pasos:[["Antes del ciclo, la piruvato deshidrogenasa convierte el piruvato en acetil-CoA, CO₂ y NADH.",["S","Mg"]],
+ ["Citrato sintasa: acetil-CoA + oxalacetato forman citrato.",[]],["Aconitasa: citrato a isocitrato.",["Fe","S"]],
+ ["Isocitrato deshidrogenasa: libera CO₂ y forma NADH.",["Mn","Mg"]],["α-cetoglutarato deshidrogenasa: segundo CO₂ y NADH.",["S"]],
+ ["Succinil-CoA sintetasa: forma ATP (en plantas) o GTP.",["P","Mg"]],["Succinato deshidrogenasa: forma FADH₂; es el complejo II de la cadena respiratoria.",["Fe","S"]],
+ ["Fumarasa: fumarato a malato.",[]],["Malato deshidrogenasa: regenera el oxalacetato y forma NADH.",[]]],
+ fin:"El α-cetoglutarato y el oxalacetato son los esqueletos de carbono con los que la planta fabrica aminoácidos: aquí se unen el metabolismo del C y el del N."},
+{t:"Cadena respiratoria",lugar:"Membrana interna de la mitocondria",eq:"NADH + H⁺ + ½ O₂ → NAD⁺ + H₂O   (cerca de 30 ATP por glucosa en total)",
+ pasos:[["Complejo I: recibe los electrones del NADH y bombea H⁺.",["Fe","S"]],["Complejo II: recibe los del FADH₂.",["Fe","S"]],
+ ["Complejo III (citocromo bc₁): bombea H⁺.",["Fe","S"]],["Citocromo c: lleva los electrones al complejo IV.",["Fe"]],
+ ["Complejo IV (citocromo oxidasa): reduce el O₂ a agua.",["Cu","Fe"]],["ATP sintasa: el retorno de H⁺ forma ATP.",["Mg","P"]]],
+ fin:"Las plantas tienen además una oxidasa alternativa que libera la energía como calor. El cianuro y varios fungicidas bloquean esta cadena."},
+{t:"Fijación biológica de nitrógeno",lugar:"Bacteroides del nódulo (Rhizobium) y bacterias libres",eq:"N₂ + 8 H⁺ + 8 e⁻ + 16 ATP → 2 NH₃ + H₂ + 16 ADP + 16 Pᵢ",
+ pasos:[["La planta entrega azúcares al nódulo; la bacteria los respira para obtener ATP y electrones.",["C","P"]],
+ ["La proteína de hierro de la nitrogenasa toma los electrones y gasta ATP.",["Fe","S","Mg"]],
+ ["La proteína de molibdeno-hierro (cofactor FeMo) reduce el N₂ a amoníaco.",["Mo","Fe","S"]],
+ ["La leghemoglobina mantiene bajo el O₂, que destruye la nitrogenasa; da el color rosado al nódulo activo.",["Fe"]],
+ ["El rizobio necesita vitamina B₁₂ para multiplicarse.",["Co"]]],
+ fin:"Es un proceso caro: 16 ATP por cada N₂. Por eso una leguminosa bien abonada con N deja de nodular. Un nódulo blanco o verde por dentro no está fijando."},
+{t:"Asimilación del nitrógeno",lugar:"Citosol y cloroplasto",eq:"NO₃⁻ → NO₂⁻ → NH₄⁺ → glutamina → glutamato → demás aminoácidos",
+ pasos:[["Nitrato reductasa (citosol): pasa nitrato a nitrito con 2 electrones.",["Mo","Fe"]],
+ ["Nitrito reductasa (cloroplasto): pasa nitrito a amonio con 6 electrones de la ferredoxina.",["Fe","S"]],
+ ["Glutamina sintetasa: une el amonio al glutamato gastando ATP.",["Mg","P"]],
+ ["Glutamato sintasa (GOGAT): con α-cetoglutarato forma dos glutamatos.",["Fe","S"]],
+ ["Las transaminasas pasan el grupo amino a otros esqueletos de carbono.",["N"]],
+ ["Si la fuente es urea, la ureasa la convierte primero en amonio y CO₂.",["Ni"]]],
+ fin:"El herbicida glufosinato inhibe la glutamina sintetasa; el glifosato bloquea la síntesis de Phe, Tyr y Trp."},
+{t:"Asimilación del azufre",lugar:"Cloroplasto",eq:"SO₄²⁻ → APS → SO₃²⁻ → S²⁻ → cisteína → metionina",
+ pasos:[["ATP sulfurilasa: activa el sulfato como adenosina fosfosulfato (APS).",["S","Mg","P"]],
+ ["APS reductasa: forma sulfito usando glutatión.",["S"]],["Sulfito reductasa: forma sulfuro con 6 electrones de la ferredoxina.",["Fe","S"]],
+ ["La O-acetilserina tiol liasa une el sulfuro a la serina y forma cisteína.",["S","N"]],
+ ["De la cisteína salen metionina, glutatión, coenzima A y los centros hierro-azufre.",["S","Fe"]]],
+ fin:"El selenato sigue esta misma ruta y termina como selenocisteína."}
+];
+const s=App.addTab("rutas","Rutas",`<h2>Rutas metabólicas</h2><p class="lede">Cada paso muestra los elementos minerales que necesita. Toca un símbolo para abrir su ficha: así se conecta la nutrición del cultivo con la bioquímica.</p><div class="chips" id="rutc"></div><div class="card" id="rutv"></div>`);
+App.$("#rutc").innerHTML=RUTAS.map((r,i)=>`<button aria-pressed="${i===0}" data-i="${i}">${r.t}</button>`).join("");
+function ruta(i){ const r=RUTAS[i]; App.$("#rutv").innerHTML=`<h3>${r.t}</h3><p class="muted">${r.lugar}</p><div class="fx">${r.eq}</div><ol class="steps">${r.pasos.map(([t,e])=>`<li>${t} ${e.map(chip).join(" ")}</li>`).join("")}</ol><p>${r.fin}</p>`; }
+ruta(0);
+App.$("#rutc").addEventListener("click",ev=>{const b=ev.target.closest("button"); if(!b) return;
+  document.querySelectorAll("#rutc button").forEach(x=>x.setAttribute("aria-pressed",x===b)); ruta(+b.dataset.i);});
+})();
+</script>
+<script>
+"use strict";
+/* Ciclos biogeoquímicos: cada ciclo se declara como depósitos (nodos) y procesos (flechas) y se dibuja en SVG. */
+(function(){
+const W=380, HW=50, HH=17;
+/* nodos: id:[rótulo,x,y] · procesos: [desde,hasta,nombre,explicación] */
+const CIC=[
+{t:"Nitrógeno",h:300,intro:"El 78 % del aire es N₂, pero las plantas solo usan nitrato y amonio. Casi todo el N del suelo está en la materia orgánica.",
+ nodes:{atm:["N₂ del aire",190,26],pla:["Planta",64,110],org:["N orgánico",64,274],nh4:["NH₄⁺ amonio",190,274],no3:["NO₃⁻ nitrato",316,196],acu:["Agua subterránea",316,274]},
+ edges:[["atm","nh4","Fijación","Rhizobium en leguminosas, bacterias libres y la industria (Haber-Bosch) convierten N₂ en amonio. N₂ + 8 H⁺ + 8 e⁻ + 16 ATP → 2 NH₃ + H₂."],
+ ["pla","org","Residuos","Hojarasca, raíces y rastrojos devuelven el N al suelo en forma orgánica."],
+ ["org","nh4","Mineralización","Los microbios descomponen proteínas y liberan amonio. Domina cuando el residuo tiene C/N menor de 20."],
+ ["nh4","org","Inmovilización","Los microbios toman N mineral para crecer cuando el residuo es pobre en N (C/N mayor de 30). El cultivo puede amarillear."],
+ ["nh4","no3","Nitrificación","Nitrosomonas: NH₄⁺ → NO₂⁻. Nitrobacter: NO₂⁻ → NO₃⁻. Necesita oxígeno y libera H⁺: acidifica el suelo."],
+ ["nh4","pla","Absorción de amonio","La raíz toma NH₄⁺ y libera H⁺. Preferido por arroz inundado y por plantas de suelos ácidos."],
+ ["no3","pla","Absorción de nitrato","Forma principal en suelos aireados. La planta debe reducirlo con la nitrato reductasa (Mo)."],
+ ["no3","atm","Desnitrificación","Sin oxígeno (encharcamiento) las bacterias respiran nitrato y lo devuelven como N₂ y N₂O, gas de efecto invernadero."],
+ ["nh4","atm","Volatilización","A pH alto el amonio pasa a NH₃ gaseoso. Ocurre con urea aplicada en superficie sin incorporar."],
+ ["no3","acu","Lixiviación","El nitrato tiene carga negativa, el suelo no lo retiene y el agua lo arrastra. Contamina acuíferos."]]},
+{t:"Fósforo",h:306,intro:"No tiene fase gaseosa: viene de la roca y se mueve muy poco. En el trópico la mayor parte queda fijada y no disponible.",
+ nodes:{roc:["Roca y abonos",64,26],pla:["Planta",316,26],sol:["P en solución",190,140],fij:["P fijado",64,280],agu:["Ríos y lagos",190,280],org:["P orgánico",316,280]},
+ edges:[["roc","sol","Meteorización","La apatita se disuelve muy despacio. Los fertilizantes solubles (DAP, MAP, superfosfatos) acortan el paso."],
+ ["sol","pla","Absorción","Como H₂PO₄⁻ o HPO₄²⁻. Llega a la raíz por difusión, apenas unos milímetros; las micorrizas amplían el alcance."],
+ ["pla","org","Residuos","Restos de cosecha y estiércol devuelven P orgánico (fitatos, ácidos nucleicos)."],
+ ["org","sol","Mineralización","Las fosfatasas de microbios y raíces liberan fosfato."],
+ ["sol","org","Inmovilización","Los microbios lo incorporan a su biomasa."],
+ ["sol","fij","Fijación","En suelos ácidos lo retienen los óxidos de Fe y Al; en alcalinos precipita con Ca. Máxima disponibilidad entre pH 6 y 7."],
+ ["fij","sol","Desorción","Liberación lenta. El encalado, la materia orgánica y los ácidos orgánicos de la raíz la favorecen."],
+ ["sol","agu","Erosión","El P viaja pegado a las partículas de suelo. En el agua dispara el crecimiento de algas: eutrofización."]]},
+{t:"Carbono",h:300,intro:"La fotosíntesis saca CO₂ del aire y la respiración lo devuelve. El suelo guarda más carbono que la atmósfera y la vegetación juntas.",
+ nodes:{atm:["CO₂ del aire",190,26],pla:["Plantas",64,150],ani:["Animales",316,150],mos:["Materia orgánica",110,274],fos:["Fósiles",290,274]},
+ edges:[["atm","pla","Fotosíntesis","6 CO₂ + 6 H₂O + luz → C₆H₁₂O₆ + 6 O₂. Es la entrada de energía a casi todos los ecosistemas."],
+ ["pla","atm","Respiración vegetal","La planta gasta cerca de la mitad de lo que fija. Producción neta = fotosíntesis bruta − respiración."],
+ ["pla","ani","Consumo","Solo cerca del 10 % de la energía pasa de un nivel trófico al siguiente."],
+ ["ani","atm","Respiración animal","Incluye el metano de la fermentación en el rumen."],
+ ["pla","mos","Hojarasca y raíces","Entrada de carbono al suelo. La lignina se descompone lento y forma humus."],
+ ["ani","mos","Excretas y restos","El estiércol y los cadáveres vuelven al suelo."],
+ ["mos","atm","Descomposición","Los microbios respiran la materia orgánica. La labranza y el calor la aceleran; en suelos inundados sale metano."],
+ ["fos","atm","Combustión","Carbón, petróleo y gas devuelven en décadas el carbono guardado durante millones de años."]]},
+{t:"Azufre",h:300,intro:"Como el nitrógeno, vive sobre todo en la materia orgánica y cambia de estado de oxidación por acción de bacterias.",
+ nodes:{atm:["SO₂ del aire",190,26],pla:["Planta",64,110],lix:["Agua de drenaje",316,110],so4:["SO₄²⁻ sulfato",190,160],org:["S orgánico",64,274],red:["Sulfuros",316,274]},
+ edges:[["atm","so4","Deposición","El SO₂ de volcanes e industria cae con la lluvia como ácido sulfúrico: lluvia ácida."],
+ ["so4","pla","Absorción","La planta toma sulfato y lo reduce para formar cisteína y metionina."],
+ ["pla","org","Residuos","Más del 90 % del S del suelo es orgánico."],
+ ["org","so4","Mineralización","Los microbios liberan sulfato al descomponer los residuos."],
+ ["so4","org","Inmovilización","Ocurre con residuos pobres en azufre (C/S mayor de 400)."],
+ ["so4","red","Reducción","Sin oxígeno, bacterias como Desulfovibrio forman H₂S y sulfuros de hierro. Tóxico para la raíz del arroz."],
+ ["red","so4","Oxidación","Thiobacillus oxida el azufre y produce ácido sulfúrico. Por eso el azufre elemental baja el pH del suelo."],
+ ["red","atm","Emisión","El H₂S escapa de pantanos y suelos inundados."],
+ ["so4","lix","Lixiviación","El sulfato es móvil y se pierde con el drenaje en suelos arenosos y lluviosos."]]},
+{t:"Agua",h:300,intro:"Balance hídrico del lote: precipitación + riego = evapotranspiración + escorrentía + drenaje ± cambio de agua almacenada.",
+ nodes:{atm:["Vapor y nubes",190,26],pla:["Planta",64,120],sue:["Agua del suelo",190,160],acu:["Acuífero",80,274],rio:["Ríos y mar",316,274]},
+ edges:[["atm","sue","Lluvia e infiltración","Cuánta entra depende de la textura, la estructura y la cobertura. 1 mm de lluvia son 10 m³ por hectárea."],
+ ["sue","pla","Absorción","La raíz toma el agua retenida entre capacidad de campo y punto de marchitez permanente."],
+ ["pla","atm","Transpiración","Más del 95 % del agua absorbida sale por los estomas. Arrastra Ca y B hacia las hojas."],
+ ["sue","atm","Evaporación","Pérdida directa desde el suelo desnudo. Las coberturas y el mulch la reducen."],
+ ["sue","acu","Percolación","El agua que supera la capacidad de campo drena y se lleva nitrato, sulfato y bases."],
+ ["sue","rio","Escorrentía","Cuando llueve más rápido de lo que el suelo infiltra. Causa erosión y arrastra fósforo."],
+ ["acu","rio","Flujo base","El acuífero alimenta ríos y nacimientos en época seca."],
+ ["rio","atm","Evaporación de aguas","Cierra el ciclo."]]}
+];
+
+function svg(c,sel){
+  const P=k=>({x:c.nodes[k][1],y:c.nodes[k][2]});
+  const borde=(a,b)=>{ const dx=b.x-a.x,dy=b.y-a.y,t=Math.min(dx?HW/Math.abs(dx):9,dy?HH/Math.abs(dy):9); return {x:a.x+dx*t,y:a.y+dy*t}; };
+  let out=`<svg class="cyc" viewBox="0 0 ${W} ${c.h}" role="img" aria-label="Ciclo del ${c.t.toLowerCase()}">`;
+  c.edges.forEach((e,i)=>{ const A=P(e[0]),B=P(e[1]); let a=borde(A,B),b=borde(B,A);
+    const L=Math.hypot(b.x-a.x,b.y-a.y),ux=(b.x-a.x)/L,uy=(b.y-a.y)/L,nx=-uy*7,ny=ux*7;   // se desplaza a un lado: ida y vuelta no se pisan
+    a={x:a.x+nx,y:a.y+ny}; b={x:b.x+nx,y:b.y+ny};
+    const hx=b.x-ux*9,hy=b.y-uy*9, t=[0.3,0.45,0.6,0.75][i%4], mx=a.x+(b.x-a.x)*t, my=a.y+(b.y-a.y)*t;   // se escalonan para que los números no se monten
+    out+=`<g class="ce${i===sel?" on":""}" data-i="${i}"><line x1="${a.x.toFixed(1)}" y1="${a.y.toFixed(1)}" x2="${hx.toFixed(1)}" y2="${hy.toFixed(1)}"/><polygon points="${b.x.toFixed(1)},${b.y.toFixed(1)} ${(hx-uy*4).toFixed(1)},${(hy+ux*4).toFixed(1)} ${(hx+uy*4).toFixed(1)},${(hy-ux*4).toFixed(1)}"/><circle cx="${mx.toFixed(1)}" cy="${my.toFixed(1)}" r="8"/><text x="${mx.toFixed(1)}" y="${my.toFixed(1)}">${i+1}</text></g>`; });
+  for(const k in c.nodes){ const [t,x,y]=c.nodes[k]; out+=`<g class="cn"><rect x="${x-HW}" y="${y-HH}" width="${HW*2}" height="${HH*2}" rx="5"/><text x="${x}" y="${y}">${t}</text></g>`; }
+  return out+"</svg>";
+}
+const s=App.addTab("ciclos","Ciclos",`<h2>Ciclos biogeoquímicos</h2><p class="lede">Los recuadros son depósitos y las flechas, procesos. Toca un número o un proceso para ver qué ocurre y por qué importa en el lote.</p><div class="chips" id="cicc"></div><div class="grid2"><div class="card" id="cicd"></div><div class="card" id="cicx"></div></div>`);
+App.$("#cicc").innerHTML=CIC.map((c,i)=>`<button aria-pressed="${i===0}" data-i="${i}">${c.t}</button>`).join("");
+let ci=0, pi=0;
+function pinta(){ const c=CIC[ci], e=c.edges[pi];
+  App.$("#cicd").innerHTML=`<p>${c.intro}</p>${svg(c,pi)}`;
+  App.$("#cicx").innerHTML=`<h3>${pi+1}. ${e[2]}</h3><p>${e[3]}</p><p class="muted">De «${c.nodes[e[0]][0]}» a «${c.nodes[e[1]][0]}»</p><div class="proc">${c.edges.map((x,i)=>`<button class="btn" data-i="${i}" aria-pressed="${i===pi}">${i+1}. ${x[2]}</button>`).join("")}</div>`; }
+pinta();
+App.$("#cicc").addEventListener("click",ev=>{const b=ev.target.closest("button"); if(!b) return; ci=+b.dataset.i; pi=0;
+  document.querySelectorAll("#cicc button").forEach(x=>x.setAttribute("aria-pressed",x===b)); pinta();});
+s.addEventListener("click",ev=>{const g=ev.target.closest(".ce,.proc .btn"); if(g){pi=+g.dataset.i; pinta();}});
+})();
+</script>
+<script>
+"use strict";
+/* Suelo y agua: interpretador del análisis de suelo, mezcla de fertilizantes y compatibilidad. Cultivos: demanda de nutrientes y dosis. */
+(function(){
+const $=App.$;
+const pill=(t,h)=>`<span class="pill" style="--hue:var(${h})">${t}</span>`;
+const NIV={bajo:"--bad",medio:"--warn",alto:"--good",ok:"--good",alerta:"--warn",critico:"--bad"};
+
+/* ---------- Rangos guía [límite bajo, límite alto]. Cámbielos por los de su laboratorio o su curso. ---------- */
+const RANGOS={P:[20,40,"ppm, Bray II"],K:[0.2,0.4,"cmol(+)/kg"],Ca:[3,6,"cmol(+)/kg"],Mg:[1.5,2.5,"cmol(+)/kg"],S:[10,20,"ppm"],Fe:[25,50,"ppm"],Mn:[5,10,"ppm"],Cu:[2,3,"ppm"],Zn:[1.5,3,"ppm"],B:[0.2,0.4,"ppm"]};
+const MO={frio:[5,10,"Clima frío"],medio:[3,5,"Clima medio"],calido:[2,3,"Clima cálido"]};
+const CAMPOS=[["ph","pH (agua 1:1)",5.1],["mo","Materia orgánica (%)",4.2],["P","P (ppm)",12],["Ca","Ca (cmol(+)/kg)",2.8],["Mg","Mg (cmol(+)/kg)",0.9],["K","K (cmol(+)/kg)",0.18],["Na","Na (cmol(+)/kg)",0.08],["Al","Al (cmol(+)/kg)",1.4],["S","S (ppm)",8],["Fe","Fe (ppm)",60],["Mn","Mn (ppm)",12],["Cu","Cu (ppm)",1.2],["Zn","Zn (ppm)",1.8],["B","B (ppm)",0.25],["ce","CE (dS/m)",0.4]];
+const nivel3=(v,r)=>v<r[0]?"bajo":v<=r[1]?"medio":"alto";
+
+/* ---------- Fertilizantes: nombre, N, P2O5, K2O ---------- */
+const FERT=[["Urea",46,0,0],["Sulfato de amonio",21,0,0],["Nitrato de amonio",33,0,0],["DAP",18,46,0],["MAP",11,52,0],["Superfosfato triple",0,46,0],["Cloruro de potasio",0,0,60],["Sulfato de potasio",0,0,50],["Nitrato de potasio",13,0,44],["Triple 15",15,15,15]];
+const COMPAT=[["Urea + nitrato de amonio","La mezcla absorbe humedad del aire y se vuelve pasta. No mezclar en seco."],
+["Urea + superfosfatos","La urea libera el agua del superfosfato y la mezcla se apelmaza. Aplicar de inmediato o por separado."],
+["Fuentes amoniacales + cal o ceniza","El pH alto convierte el amonio en amoníaco gaseoso: se pierde N. Encalar al menos 3 semanas antes de abonar."],
+["DAP o superfosfatos + cal","El calcio precipita el fosfato y lo deja insoluble."],
+["Nitrato de calcio + sulfatos o fosfatos (en solución)","Precipitan yeso o fosfato de calcio y tapan goteros. En fertirriego van en tanques separados (A y B)."],
+["Micronutrientes en sulfato + fosfatos (en solución)","Fe, Zn y Mn precipitan como fosfatos. Usar quelatos o tanque aparte."],
+["Cloruro de potasio en cultivos sensibles","Tabaco, papa para fritura y aguacate toleran mal el cloruro: preferir sulfato o nitrato de potasio."]];
+
+const s=App.addTab("suelo","Suelo y agua",`
+<h2>Interpretar un análisis de suelo</h2>
+<p class="lede">Escribe los resultados del laboratorio. La app clasifica cada valor, calcula la CICE, las saturaciones y las relaciones entre cationes, y señala qué corregir primero. Abre con un suelo ácido de ejemplo.</p>
+<div class="card"><div class="ins" id="sin"><label>Clima<select class="field" id="s-clima"><option value="frio">Frío</option><option value="medio" selected>Medio</option><option value="calido">Cálido</option></select></label>
+${CAMPOS.map(([k,l,v])=>`<label>${l}<input class="field" id="s-${k}" type="number" step="any" inputmode="decimal" value="${v}"></label>`).join("")}</div></div>
+<div class="tscroll"><table id="sres"></table></div>
+<div class="card" id="srec"></div>
+<details><summary>Rangos usados para clasificar</summary><div class="tscroll"><table id="srang"></table></div>
+<p class="note">Guía general para suelos de Colombia en la línea de las tablas del ICA. Los cortes cambian con el método de extracción y con el cultivo: use siempre los de su laboratorio.</p></details>
+
+<h2>Mezcla de fertilizantes</h2>
+<p class="lede">Elige tres fuentes y la recomendación en kg/ha. La app resuelve cuánto de cada producto cubre exactamente N, P₂O₅ y K₂O.</p>
+<div class="card"><div class="ins">
+${["N","P2O5","K2O"].map((k,i)=>`<label>${k==="P2O5"?"P₂O₅":k==="K2O"?"K₂O":k} requerido (kg/ha)<input class="field" id="m-${k}" type="number" step="any" value="${[120,60,90][i]}"></label>`).join("")}
+${[0,3,6].map((d,i)=>`<label>Fuente ${i+1}<select class="field" id="m-f${i}">${FERT.map((f,j)=>`<option value="${j}"${j===d?" selected":""}>${f[0]} (${f[1]}-${f[2]}-${f[3]})</option>`).join("")}</select></label>`).join("")}
+</div><div class="fx">grado₁ × x₁ + grado₂ × x₂ + grado₃ × x₃ = requerimiento   (una ecuación por nutriente)</div><div class="out" id="mout"></div></div>
+<h3>Compatibilidad de mezclas</h3>
+<div class="tscroll"><table>${COMPAT.map(c=>`<tr><td class="wrap-ok"><b>${c[0]}</b></td><td class="wrap-ok">${c[1]}</td></tr>`).join("")}</table></div>`);
+
+$("#srang").innerHTML=`<tr><th>Parámetro</th><th class="num">Bajo si menor de</th><th class="num">Alto si mayor de</th><th>Unidad</th></tr>`+
+  Object.entries(RANGOS).map(([k,r])=>`<tr><td>${k}</td><td class="num">${n(r[0])}</td><td class="num">${n(r[1])}</td><td>${r[2]}</td></tr>`).join("")+
+  Object.values(MO).map(r=>`<tr><td>Materia orgánica · ${r[2]}</td><td class="num">${n(r[0])}</td><td class="num">${n(r[1])}</td><td>%</td></tr>`).join("");
+
+function interpreta(){
+  const v={}; CAMPOS.forEach(([k])=>v[k]=+$("#s-"+k).value); const clima=$("#s-clima").value;
+  if(CAMPOS.some(([k])=>$("#s-"+k).value===""||!Number.isFinite(v[k])||v[k]<0)){ $("#sres").innerHTML=""; $("#srec").innerHTML=`<p class="err" style="color:var(--bad)">Completa todos los valores con números positivos.</p>`; return; }
+  const filas=[], rec=[];
+  const add=(p,val,niv,txt)=>filas.push(`<tr><td>${p}</td><td class="num">${val}</td><td>${pill(niv[0],NIV[niv[1]])}</td><td class="wrap-ok">${txt}</td></tr>`);
+  const ph=v.ph; add("pH",n(ph,1),ph<5.5?["Ácido","critico"]:ph<=6.5?["Adecuado","ok"]:ph<=7.3?["Neutro","ok"]:["Alcalino","alerta"],
+    ph<5.5?"Aluminio soluble; poca disponibilidad de P, Ca, Mg y Mo.":ph<=7.3?"Rango donde la mayoría de nutrientes está disponible.":"Baja disponibilidad de Fe, Mn, Zn, Cu y B; el P precipita con calcio.");
+  const lm=nivel3(v.mo,MO[clima]); add("Materia orgánica",n(v.mo,1)+" %",[lm,lm],`C orgánico ≈ ${n(v.mo/1.724,1)} %. ${lm==="bajo"?"Poca reserva de N y S; incorporar residuos y abonos orgánicos.":"Buena reserva de N, S y capacidad de retención."}`);
+  for(const k of ["P","Ca","Mg","K","S","Fe","Mn","Cu","Zn","B"]){ const l=nivel3(v[k],RANGOS[k]); add(k,n(v[k],2)+" "+RANGOS[k][2].split(",")[0],[l,l],l==="bajo"?"Probable respuesta a la fertilización.":l==="medio"?"Aplicar dosis de mantenimiento.":"Suficiente; no suele haber respuesta."); if(l==="bajo") rec.push(k); }
+  const bases=v.Ca+v.Mg+v.K+v.Na, cice=bases+v.Al;
+  if(cice>0){ const sAl=100*v.Al/cice, psi=100*v.Na/cice;
+    add("CICE",n(cice,2)+" cmol(+)/kg",cice<5?["Baja","alerta"]:cice<=10?["Media","ok"]:["Alta","ok"],`Ca + Mg + K + Na + Al = ${n(v.Ca)} + ${n(v.Mg)} + ${n(v.K)} + ${n(v.Na)} + ${n(v.Al)}. ${cice<5?"Poca capacidad de retener nutrientes: fraccionar las aplicaciones.":""}`);
+    add("Saturación de bases",n(100*bases/cice,1)+" %",100*bases/cice<50?["Baja","alerta"]:["Adecuada","ok"],"Bases ÷ CICE × 100.");
+    add("Saturación de aluminio",n(sAl,1)+" %",sAl<15?["Baja","ok"]:sAl<=30?["Media","alerta"]:["Alta","critico"],sAl>30?"Limita a la mayoría de los cultivos; encalar.":sAl>=15?"Afecta a cultivos sensibles como fríjol, soya y alfalfa.":"Sin problema de acidez intercambiable.");
+    add("Sodio intercambiable (PSI)",n(psi,1)+" %",psi<5?["Normal","ok"]:psi<=15?["Atención","alerta"]:["Sódico","critico"],psi>15?"Suelo sódico: aplicar yeso y lavar.":"Na ÷ CICE × 100.");
+    if(sAl>=15||ph<5.5) rec.unshift(`cal`);
+    var cal=1.5*v.Al; }
+  const rel=(nom,x,lo,hi,bajo,alto)=>{ if(!Number.isFinite(x)) return; add(nom,n(x,1),x<lo?["Baja","alerta"]:x<=hi?["Equilibrada","ok"]:["Alta","alerta"],x<lo?bajo:x>hi?alto:`Rango deseable ${n(lo)} a ${n(hi)}.`); };
+  rel("Ca/Mg",v.Ca/v.Mg,2,5,"Calcio bajo frente al magnesio.","Puede inducir deficiencia de magnesio.");
+  rel("Mg/K",v.Mg/v.K,2.5,15,"Puede inducir deficiencia de magnesio.","Potasio bajo frente al magnesio.");
+  rel("Ca/K",v.Ca/v.K,5,25,"Calcio bajo frente al potasio.","Potasio bajo frente al calcio.");
+  rel("(Ca+Mg)/K",(v.Ca+v.Mg)/v.K,10,40,"Exceso relativo de potasio.","Puede inducir deficiencia de potasio.");
+  add("Conductividad eléctrica",n(v.ce,2)+" dS/m",v.ce<2?["No salino","ok"]:v.ce<=4?["Ligeramente salino","alerta"]:["Salino","critico"],v.ce>=2?"Afecta a cultivos sensibles (fríjol, fresa, aguacate).":"Sin restricción por sales.");
+  $("#sres").innerHTML=`<tr><th>Parámetro</th><th class="num">Valor</th><th>Nivel</th><th class="wrap-ok">Lectura</th></tr>`+filas.join("");
+  const el=rec.filter(x=>x!=="cal");
+  $("#srec").innerHTML=`<h3>Qué corregir primero</h3><ol class="steps">${rec.includes("cal")?`<li><b>Acidez.</b> Con ${n(v.Al)} cmol(+)/kg de Al, el criterio de Kamprath (factor 1,5) da cerca de ${n(cal,1)} t/ha de CaCO₃ puro. Si además falta Mg, usar cal dolomita.</li>`:""}${el.length?`<li><b>Nutrientes en nivel bajo:</b> ${el.map(k=>`<button class="chipel" data-el="${k}">${k}</button>`).join(" ")}. Toca cada uno para ver fuentes y síntomas.</li>`:""}${!rec.length?"<li>No hay limitantes marcadas con estos rangos. Mantener con dosis de reposición según la extracción del cultivo.</li>":""}<li class="muted">El orden importa: primero se corrige la acidez, después fósforo y bases, y al final los micronutrientes.</li></ol>`;
+}
+$("#sin").addEventListener("input",interpreta); interpreta();
+
+function mezcla(){
+  const b=["N","P2O5","K2O"].map(k=>+$("#m-"+k).value), f=[0,1,2].map(i=>FERT[+$("#m-f"+i).value]), out=$("#mout");
+  const A=[1,2,3].map(r=>f.map(x=>x[r]/100));        // A[nutriente][fuente]
+  const det=m=>m[0][0]*(m[1][1]*m[2][2]-m[1][2]*m[2][1])-m[0][1]*(m[1][0]*m[2][2]-m[1][2]*m[2][0])+m[0][2]*(m[1][0]*m[2][1]-m[1][1]*m[2][0]);
+  const D=det(A);
+  if(b.some(x=>!Number.isFinite(x)||x<0)){ out.innerHTML=`<p class="err">Escribe los tres requerimientos.</p>`; return; }
+  if(Math.abs(D)<1e-9){ out.innerHTML=`<p class="err">Con estas tres fuentes no se pueden ajustar los tres nutrientes por separado. Elige una fuente que aporte el nutriente que falta.</p>`; return; }
+  const x=[0,1,2].map(j=>det(A.map((row,i)=>row.map((c,k)=>k===j?b[i]:c)))/D);
+  if(x.some(q=>q<-0.01)){ const j=x.findIndex(q=>q<-0.01); out.innerHTML=`<p class="err">La combinación exigiría una cantidad negativa de ${esc(f[j][0])}: otra fuente ya aporta de más ese nutriente. Cambia una de las fuentes.</p>`; return; }
+  const ap=r=>x.reduce((a,q,j)=>a+q*f[j][r]/100,0);
+  out.innerHTML=`<ol>${x.map((q,j)=>`<li>${esc(f[j][0])}: ${n(q,1)} kg/ha → aporta ${n(q*f[j][1]/100,1)} N · ${n(q*f[j][2]/100,1)} P₂O₅ · ${n(q*f[j][3]/100,1)} K₂O</li>`).join("")}<li>Comprobación: ${n(ap(1),1)} N · ${n(ap(2),1)} P₂O₅ · ${n(ap(3),1)} K₂O</li></ol><div class="res"><div>Mezcla total: <b>${n(x.reduce((a,q)=>a+q,0),1)} kg/ha</b> (${n(x.reduce((a,q)=>a+q,0)/50,1)} sacos de 50 kg)</div></div>`;
+}
+["m-N","m-P2O5","m-K2O","m-f0","m-f1","m-f2"].forEach(id=>$("#"+id).addEventListener("input",mezcla)); mezcla();
+
+/* ---------- Cultivos: kg de N, P2O5 y K2O por tonelada cosechada (valores orientativos) ---------- */
+const CULT=[["Maíz","t de grano",22,9,23,"Absorción total de la planta"],["Arroz","t de grano paddy",22,9,31,"Absorción total de la planta"],["Trigo","t de grano",30,11,23,"Absorción total de la planta"],["Soya","t de grano",75,16,47,"Absorción total; la mayor parte del N viene de la fijación biológica"],["Papa","t de tubérculo fresco",5,2,8,"Absorción total aproximada"],["Tomate","t de fruto fresco",3,1,5,"Absorción total aproximada"],["Caña de azúcar","t de tallos",1.2,0.6,2.2,"Absorción total aproximada"],["Banano","t de fruta",2,0.5,6.5,"Solo lo que sale del lote en el racimo"],["Café","t de pergamino seco",30.9,5.3,44.5,"Solo lo que sale en los frutos (Cenicafé)"]];
+App.addTab("cultivos","Cultivos",`
+<h2>Demanda de nutrientes y dosis por cultivo</h2>
+<p class="lede">La dosis parte de un balance: lo que el cultivo necesita para el rendimiento esperado, menos lo que aporta el suelo, corregido por la parte del fertilizante que la planta alcanza a tomar.</p>
+<div class="card"><div class="fx">dosis = (rendimiento × extracción por tonelada − aporte del suelo) / eficiencia</div>
+<div class="ins" id="cin"><label>Cultivo<select class="field" id="c-cult">${CULT.map((c,i)=>`<option value="${i}">${c[0]}</option>`).join("")}</select></label>
+<label><span id="c-ul">Rendimiento esperado (t/ha)</span><input class="field" id="c-rend" type="number" step="any" value="8"></label>
+${[["N","N",22,40,60],["P","P₂O₅",9,20,25],["K","K₂O",23,60,65]].map(([k,l,e,a,f])=>`<label>Extracción de ${l} (kg/t)<input class="field" id="c-e${k}" type="number" step="any" value="${e}"></label><label>Aporte del suelo, ${l} (kg/ha)<input class="field" id="c-a${k}" type="number" step="any" value="${a}"></label><label>Eficiencia de ${l} (%)<input class="field" id="c-f${k}" type="number" step="any" value="${f}"></label>`).join("")}
+</div><div class="out" id="cout"></div></div>
+<p class="note">Eficiencias habituales: N 50–70 %, P 15–30 %, K 50–70 %. El aporte del suelo se estima con el análisis (calculadora «De ppm a kg por hectárea») y la mineralización de la materia orgánica.</p>
+<h3>Extracción por tonelada cosechada</h3>
+<div class="tscroll"><table><tr><th>Cultivo</th><th>Por cada</th><th class="num">N</th><th class="num">P₂O₅</th><th class="num">K₂O</th><th class="wrap-ok">Qué incluye</th></tr>${CULT.map(c=>`<tr><td>${c[0]}</td><td>${c[1]}</td><td class="num">${n(c[2])}</td><td class="num">${n(c[3])}</td><td class="num">${n(c[4])}</td><td class="wrap-ok">${c[5]}</td></tr>`).join("")}</table></div>
+<p class="note">Valores orientativos en kg. Cambian con la variedad, el rendimiento y el manejo: al elegir el cultivo se cargan en la calculadora y puedes reemplazarlos por los de tu guía técnica (Cenicafé, Fedearroz, Agrosavia).</p>`);
+function dosis(){
+  const g=id=>+$("#c-"+id).value, r=g("rend"), c=CULT[+$("#c-cult").value], out=$("#cout");
+  $("#c-ul").textContent=`Rendimiento esperado (${c[1].replace("t de","t/ha de")})`;
+  const ps=[], res=[];
+  for(const [k,l] of [["N","N"],["P","P₂O₅"],["K","K₂O"]]){ const e=g("e"+k),a=g("a"+k),f=g("f"+k);
+    if(![r,e,a,f].every(Number.isFinite)||f<=0||f>100){ out.innerHTML=`<p class="err">Revisa los valores: la eficiencia debe estar entre 1 y 100 %.</p>`; return; }
+    const dem=r*e, d=Math.max(0,(dem-a)/(f/100));
+    ps.push(`${l}: (${n(r)} × ${n(e)} − ${n(a)}) ÷ ${n(f/100)} = (${n(dem,1)} − ${n(a)}) ÷ ${n(f/100)} = ${n(d,0)} kg/ha`); res.push(`<div>${l}: <b>${n(d,0)} kg/ha</b> (demanda ${n(dem,0)})</div>`); }
+  out.innerHTML=`<ol>${ps.map(p=>`<li>${p}</li>`).join("")}</ol><div class="res">${res.join("")}</div><p class="nota">Lleva estas tres cifras a «Mezcla de fertilizantes» en la pestaña Suelo y agua para convertirlas en productos.</p>`;
+}
+$("#c-cult").addEventListener("change",()=>{const c=CULT[+$("#c-cult").value]; $("#c-eN").value=c[2]; $("#c-eP").value=c[3]; $("#c-eK").value=c[4]; dosis();});
+$("#cin").addEventListener("input",dosis); dosis();
+})();
+</script>
+<script>
+"use strict";
+/* Estudio: clave de diagnóstico de deficiencias, quiz y notas con favoritos guardados en el dispositivo. */
+(function(){
+const $=App.$;
+const chip=s=>`<button class="chipel" data-el="${s}">${s}</button>`;
+
+/* ---------- Diagnóstico: árbol de decisión. Nodo = {q, o:[[opción, siguiente]]} · hoja = {el, t} ---------- */
+const ARBOL={
+ini:{q:"¿Dónde aparecieron primero los síntomas?",o:[["En las hojas viejas, de abajo","viejas"],["En las hojas jóvenes o los brotes","jovenes"]]},
+viejas:{q:"El nutriente es móvil: la planta lo saca de las hojas viejas. ¿Cómo se ve la hoja?",o:[["Amarilla pareja en toda la lámina; planta pálida y pequeña","N"],["Verde oscuro o púrpura, sin amarillamiento; poca raíz","P"],["Borde y punta quemados, como chamuscados","K"],["Amarilla entre las nervaduras, que siguen verdes","Mg"],["Amarilla con bordes enrollados; leguminosa que no nodula","Mo"]]},
+jovenes:{q:"El nutriente es inmóvil: no llega al tejido nuevo. ¿El brote o el ápice se está muriendo?",o:[["Sí: el punto de crecimiento muere o se deforma","apice"],["No: el brote vive, pero las hojas nuevas cambian de color o tamaño","color"]]},
+apice:{q:"¿Qué acompaña a la muerte del ápice?",o:[["Hojas nuevas pegadas o en gancho; pudrición en la punta del fruto","Ca"],["Tejido quebradizo, entrenudos cortos, frutos o raíces huecos y deformes","B"],["Hojas nuevas marchitas o enrolladas, puntas blancas, espigas vacías","Cu"]]},
+color:{q:"¿Cómo son las hojas nuevas?",o:[["Amarillas parejas, nervaduras incluidas","S"],["Amarillas o casi blancas con una red fina de nervaduras verdes","Fe"],["Amarillas entre nervaduras con puntos muertos; nervaduras verdes anchas","Mn"],["Pequeñas, angostas y agrupadas en roseta; entrenudos cortos","Zn"]]}
+};
+const sd=App.addTab("diagnostico","Diagnóstico",`<h2>Clave de deficiencias nutricionales</h2><p class="lede">Responde lo que ves en la planta. La primera pregunta separa los nutrientes móviles de los inmóviles, que es el criterio que más descarta.</p><div class="card" id="dx"></div><p class="note">Una clave visual orienta, no confirma. Plagas, enfermedades, herbicidas, encharcamiento y sequía producen síntomas parecidos, y varias deficiencias pueden coincidir. Confirmar con análisis foliar y de suelo.</p>`);
+let camino=["ini"];
+function dx(){ const k=camino[camino.length-1], nodo=ARBOL[k]; let h="";
+  if(nodo) h=`<h3>${nodo.q}</h3><div class="opts">${nodo.o.map(([t,s])=>`<button class="btn" data-n="${s}">${t}</button>`).join("")}</div>`;
+  else { const e=BY[k], a=AG[k]; h=`<h3>Probable deficiencia de ${e.name.toLowerCase()} ${chip(k)}</h3><dl class="kv"><dt>Síntoma típico</dt><dd>${a.def}</dd><dt>Función</dt><dd>${a.fun}</dd><dt>Movilidad</dt><dd>${a.mov}</dd><dt>Cómo corregir</dt><dd>${a.fue}</dd>${a.ph?`<dt>Revisar el pH</dt><dd>Más disponible entre ${n(a.ph[0])} y ${n(a.ph[1])}. Fuera de ese rango puede faltar aunque el suelo lo tenga.</dd>`:""}</dl>`; }
+  if(camino.length>1) h+=`<div class="row"><button class="btn" data-n="__atras">Volver a la pregunta anterior</button><button class="btn" data-n="__ini">Empezar de nuevo</button></div>`;
+  $("#dx").innerHTML=h; }
+sd.addEventListener("click",ev=>{const b=ev.target.closest("[data-n]"); if(!b) return; const x=b.dataset.n;
+  if(x==="__atras") camino.pop(); else if(x==="__ini") camino=["ini"]; else camino.push(x); dx();});
+dx();
+
+/* ---------- Quiz ---------- */
+const azar=a=>a[Math.floor(Math.random()*a.length)];
+const mezcla=a=>{a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]];} return a;};
+function otros(pool,ok,k=3){ return mezcla([...new Set(pool)].filter(x=>x!==ok)).slice(0,k); }
+const COMUNES=EL.filter(e=>e.Z<=56||AG[e.sym]);
+const NUT=Object.keys(AG).filter(k=>AG[k].def);
+const BANCO=[
+["¿Cuánto nitrógeno tiene la urea?","46 %",["21 %","33 %","18 %"],"CO(NH₂)₂: 2 × 14,007 ÷ 60,06 = 46,6 %."],
+["Para pasar de P₂O₅ a P se multiplica por…","0,436",["0,830","0,715","2,29"],"2 × 30,974 ÷ 141,94 = 0,436."],
+["Para pasar de K₂O a K se multiplica por…","0,830",["0,436","1,205","0,603"],"2 × 39,098 ÷ 94,20 = 0,830."],
+["En una capa de 20 cm con densidad 1,25 g/cm³, 1 ppm equivale a…","2,5 kg/ha",["1 kg/ha","10 kg/ha","25 kg/ha"],"La hectárea pesa 2 500 000 kg; 1 mg/kg × 2,5 millones de kg = 2,5 kg."],
+["¿Cuál es el único micronutriente que se vuelve más disponible al subir el pH?","Molibdeno",["Hierro","Zinc","Manganeso"],"Los demás micronutrientes metálicos precipitan a pH alto."],
+["¿Qué enzima necesita níquel?","Ureasa",["Nitrogenasa","Rubisco","Catalasa"],"Convierte la urea en amonio y CO₂."],
+["¿Qué metal está en el centro de la clorofila?","Magnesio",["Hierro","Manganeso","Cobre"],"Por eso su deficiencia causa clorosis entre nervaduras."],
+["La nitrogenasa necesita dos metales. ¿Cuáles?","Hierro y molibdeno",["Cobre y zinc","Manganeso y calcio","Níquel y cobalto"],"Proteína de Fe y proteína de MoFe."],
+["Un residuo con relación C/N de 60 provoca al inicio…","Inmovilización de N",["Mineralización neta","Nitrificación rápida","Volatilización"],"Los microbios toman N del suelo para descomponerlo."],
+["¿Qué aminoácidos proteicos contienen azufre?","Cisteína y metionina",["Serina y treonina","Lisina y arginina","Tirosina y triptófano"],"Por eso el S acompaña al N en la síntesis de proteína."],
+["En un amortiguador, el pH es igual al pKa cuando…","[A⁻] = [HA]",["[A⁻] = 10 [HA]","el pH es 7","no queda ácido"],"log 1 = 0 en la ecuación de Henderson–Hasselbalch."],
+["La proteína cruda se estima multiplicando el N por…","6,25",["1,724","0,436","16"],"Las proteínas tienen en promedio 16 % de N: 100 ÷ 16."],
+["La nitrificación del amonio…","Produce nitrato y acidifica el suelo",["Produce N₂ y sube el pH","Requiere falta de oxígeno","La hace Rhizobium"],"Libera H⁺ y necesita oxígeno."],
+["¿Cuál de estas plantas es C4?","Maíz",["Arroz","Papa","Café"],"También caña, sorgo y pastos tropicales."],
+["¿Qué enzima fija el CO₂ en el ciclo de Calvin?","Rubisco",["PEP carboxilasa","Nitrato reductasa","ATP sintasa"],"Ribulosa-1,5-bisfosfato carboxilasa/oxigenasa."],
+["1 cmol(+)/kg es lo mismo que…","1 meq/100 g",["1 ppm","10 meq/100 g","1 mg/kg"],"Son la misma cantidad en unidades distintas."],
+["Un suelo se considera sódico cuando el sodio intercambiable supera…","15 %",["1 %","5 %","50 %"],"Se corrige con yeso y lavado."],
+["¿Qué elemento rompe la molécula de agua en el fotosistema II?","Manganeso",["Magnesio","Molibdeno","Boro"],"Complejo Mn₄CaO₅."],
+["La plastocianina lleva electrones gracias a un átomo de…","Cobre",["Hierro","Zinc","Calcio"],"Une el citocromo b₆f con el fotosistema I."],
+["La eutrofización de lagos se debe sobre todo al exceso de…","Fósforo",["Calcio","Aluminio","Sílice"],"Llega con la erosión y dispara el crecimiento de algas."],
+["El factor 1,724 convierte…","Carbono orgánico en materia orgánica",["N en proteína","P₂O₅ en P","ppm en kg/ha"],"Supone 58 % de C en la materia orgánica."],
+["¿Qué catión es tóxico para las raíces a pH menor de 5,5?","Al³⁺",["Ca²⁺","K⁺","Mg²⁺"],"Se neutraliza con encalado."],
+["La pudrición apical del tomate es deficiencia de…","Calcio",["Potasio","Nitrógeno","Magnesio"],"El Ca es inmóvil y llega al fruto solo con la transpiración."],
+["1 mm de lluvia o riego equivale a…","10 m³/ha",["1 m³/ha","100 m³/ha","1000 L/ha"],"0,001 m × 10 000 m²."]
+];
+const TEMAS={
+sim:["Símbolos",()=>{const e=azar(COMUNES); return Math.random()<0.5
+  ?{q:`¿Qué elemento tiene el símbolo ${e.sym}?`,ok:e.name,mal:otros(COMUNES.map(x=>x.name),e.name),ex:`${e.sym} = ${e.name}, Z = ${e.Z}.`}
+  :{q:`¿Cuál es el símbolo del ${e.name.toLowerCase()}?`,ok:e.sym,mal:otros(COMUNES.map(x=>x.sym),e.sym),ex:`${e.name} = ${e.sym}, Z = ${e.Z}.`};}],
+nut:["Nutrición vegetal",()=>{const t=Math.random(), k=azar(NUT), e=BY[k], a=AG[k];
+  if(t<0.45) return {q:`¿Qué deficiencia produce esto? «${a.def}»`,ok:e.name,mal:otros(NUT.map(x=>BY[x].name),e.name),ex:a.mov};
+  if(t<0.7&&!/media/.test(a.mov)) {const v=/^Móvil/.test(a.mov); return {q:`La deficiencia de ${e.name.toLowerCase()} aparece primero en…`,ok:v?"Hojas viejas":"Hojas jóvenes",mal:[v?"Hojas jóvenes":"Hojas viejas"],ex:a.mov};}
+  const r=azar(Object.keys(AG).filter(x=>AG[x].rol!=="estr")), R={macro:"Macronutriente",micro:"Micronutriente",ben:"Elemento benéfico",tox:"Tóxico o contaminante"};
+  return {q:`Para las plantas, el ${BY[r].name.toLowerCase()} es…`,ok:R[AG[r].rol],mal:otros(Object.values(R),R[AG[r].rol]),ex:AG[r].fun};}],
+aa:["Aminoácidos",()=>{const a=azar(AA), t=Math.random();
+  if(t<0.4) return {q:`¿Qué aminoácido es ${a.t} (${a.l})?`,ok:a.name,mal:otros(AA.map(x=>x.name),a.name),ex:`${a.name}: ${a.cls.toLowerCase()}.`};
+  if(t<0.7){ const g=mezcla(AA).slice(0,4), m=g.reduce((x,y)=>pI(y)>pI(x)?y:x); return {q:"¿Cuál tiene el punto isoeléctrico más alto?",ok:m.name,mal:g.filter(x=>x!==m).map(x=>x.name),ex:g.map(x=>`${x.t} ${n(pI(x),2)}`).join(" · ")}; }
+  const cl=azar(["Ácido","Básico","Aromático"]), ok=azar(AA.filter(x=>x.cls===cl));
+  return {q:`¿Cuál de estos aminoácidos es ${cl.toLowerCase()}?`,ok:ok.name,mal:otros(AA.filter(x=>x.cls!==cl).map(x=>x.name),ok.name),ex:`${ok.name}: pI ${n(pI(ok),2)}.`};}],
+con:["Conceptos y fórmulas",()=>{const b=azar(BANCO); return {q:b[0],ok:b[1],mal:b[2],ex:b[3]};}]
+};
+const leer=(k,d)=>{try{const v=localStorage.getItem(k); return v?JSON.parse(v):d}catch(e){return d}};
+const guardar=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+const sq=App.addTab("quiz","Quiz",`<h2>Quiz</h2><p class="lede">Preguntas al azar para repasar. Elige los temas y responde; cada respuesta trae su explicación.</p><div class="chips" id="qt">${Object.entries(TEMAS).map(([k,v])=>`<button aria-pressed="true" data-k="${k}">${v[0]}</button>`).join("")}</div><div class="card" id="qv"></div><p class="note" id="qs"></p>`);
+let Q=null, st={ok:0,tot:0,racha:0}, mejor=leer("tpa-racha",0);
+function nueva(){ const act=[...document.querySelectorAll('#qt button[aria-pressed="true"]')].map(b=>b.dataset.k); const k=azar(act.length?act:Object.keys(TEMAS));
+  Q=TEMAS[k][1](); Q.tema=TEMAS[k][0]; Q.ops=mezcla([Q.ok,...Q.mal]); Q.hecha=false; pq(); }
+function pq(resp){ $("#qv").innerHTML=`<span class="muted" style="font-size:.74rem;text-transform:uppercase;letter-spacing:.06em">${Q.tema}</span><h3>${esc(Q.q)}</h3><div class="opts">${Q.ops.map(o=>`<button class="btn${Q.hecha?(o===Q.ok?" ok":o===resp?" ko":""):""}" data-o="${esc(o)}"${Q.hecha?" disabled":""}>${esc(o)}</button>`).join("")}</div>${Q.hecha?`<p><b>${resp===Q.ok?"Correcto.":"La respuesta es "+esc(Q.ok)+"."}</b> ${esc(Q.ex)}</p><div class="row"><button class="btn pri" id="qn">Siguiente pregunta</button></div>`:""}`;
+  $("#qs").textContent=`Aciertos: ${st.ok} de ${st.tot} · racha actual: ${st.racha} · mejor racha en este dispositivo: ${mejor}`; }
+sq.addEventListener("click",ev=>{ const t=ev.target.closest("#qt button"); if(t){ t.setAttribute("aria-pressed",t.getAttribute("aria-pressed")!=="true"); nueva(); return; }
+  if(ev.target.closest("#qn")){ nueva(); return; }
+  const b=ev.target.closest("[data-o]"); if(!b||Q.hecha) return; const r=b.textContent; Q.hecha=true; st.tot++;
+  if(r===Q.ok){ st.ok++; st.racha++; if(st.racha>mejor){mejor=st.racha; guardar("tpa-racha",mejor);} } else st.racha=0; pq(r); });
+nueva();
+
+/* ---------- Notas y favoritos (se guardan solo en este dispositivo) ---------- */
+let NOT=leer("tpa-notas",{});
+const sn=App.addTab("notas","Mis notas",`<h2>Mis notas</h2><p class="lede">Marca elementos como favoritos y escribe apuntes desde la ficha de cada uno. Se guardan en este dispositivo y navegador; no se sincronizan entre el celular y el computador.</p><div class="card"><label for="nota-gen"><b>Apuntes generales</b></label><textarea class="field" id="nota-gen" placeholder="Fórmulas del parcial, pendientes, dudas para clase…"></textarea></div><div class="grid2" id="nlist"></div>`);
+function lista(){ const ks=Object.keys(NOT).filter(k=>BY[k]&&(NOT[k].fav||NOT[k].nota)).sort((a,b)=>BY[a].Z-BY[b].Z);
+  $("#nlist").innerHTML=ks.length?ks.map(k=>`<div class="card"><div class="row">${chip(k)}<b>${BY[k].name}</b>${NOT[k].fav?'<span class="pill" style="--hue:var(--c-alt)">Favorito</span>':""}</div>${NOT[k].nota?`<p style="white-space:pre-wrap">${esc(NOT[k].nota)}</p>`:""}</div>`).join(""):`<p class="muted">Todavía no hay favoritos ni notas. Abre un elemento en la tabla y usa «Marcar como favorito» o el cuadro de apuntes al final de la ficha.</p>`; }
+const gen=$("#nota-gen"); gen.value=leer("tpa-general",""); gen.addEventListener("input",()=>guardar("tpa-general",gen.value));
+lista();
+App.hooks.push((e,d)=>{ const body=d.querySelector(".d-body"), cur=NOT[e.sym]||{};
+  const sec=document.createElement("div"); sec.className="sec";
+  sec.innerHTML=`<h3>Mis apuntes</h3><div class="opts"><div class="row"><button class="btn" id="fav-b" aria-pressed="${!!cur.fav}">${cur.fav?"Quitar de favoritos":"Marcar como favorito"}</button></div><textarea class="field" id="nota-el" aria-label="Apuntes sobre ${e.name}" placeholder="Apuntes sobre ${e.name.toLowerCase()}…"></textarea></div>`;
+  body.append(sec); const ta=sec.querySelector("#nota-el"), fb=sec.querySelector("#fav-b"); ta.value=cur.nota||"";
+  const save=()=>{ NOT[e.sym]={fav:fb.getAttribute("aria-pressed")==="true",nota:ta.value}; guardar("tpa-notas",NOT); lista(); };
+  ta.addEventListener("input",save);
+  fb.addEventListener("click",()=>{ const on=fb.getAttribute("aria-pressed")!=="true"; fb.setAttribute("aria-pressed",on); fb.textContent=on?"Quitar de favoritos":"Marcar como favorito"; save(); });
+});
+})();
+</script>
+<script>App.tab((location.hash||"").slice(1));</script>
+</body>
+</html>
