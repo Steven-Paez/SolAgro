@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -148,6 +150,7 @@ class _PaginaNuevaGuiaState extends State<PaginaNuevaGuia> {
   final _extra = TextEditingController();
   final _texto = StringBuffer();
   PlatformFile? _archivo;
+  Uint8List? _bytesPdf;
   TipoGuia _tipo = TipoGuia.taller;
   bool _generando = false;
   bool _guardada = false;
@@ -160,20 +163,21 @@ class _PaginaNuevaGuiaState extends State<PaginaNuevaGuia> {
   }
 
   Future<void> _elegir() async {
-    final r = await FilePicker.platform.pickFiles(
+    final f = await FilePicker.pickFile(
       type: FileType.custom,
       allowedExtensions: ['pdf'],
-      withData: true,
     );
-    if (r == null || !mounted) return;
-    final f = r.files.single;
+    if (f == null || !mounted) return;
+    final bytes = await f.readAsBytes();
+    if (!mounted) return;
     setState(() {
-      if (f.bytes == null) {
+      if (bytes.isEmpty) {
         _error = 'No se pudo leer el archivo. Prueba a copiarlo al teléfono.';
-      } else if (f.size > maxBytesPdf) {
+      } else if (bytes.length > maxBytesPdf) {
         _error = 'El PDF pesa más de 20 MB. Prueba con menos páginas.';
       } else {
         _archivo = f;
+        _bytesPdf = bytes;
         _error = null;
       }
     });
@@ -197,7 +201,7 @@ class _PaginaNuevaGuiaState extends State<PaginaNuevaGuia> {
     try {
       final partes = pedirGuia(
         clave: clave,
-        pdf: _archivo!.bytes!,
+        pdf: _bytesPdf!,
         tipo: _tipo,
         extra: _extra.text,
       );
@@ -237,7 +241,7 @@ class _PaginaNuevaGuiaState extends State<PaginaNuevaGuia> {
               icon: const Icon(Icons.picture_as_pdf_outlined),
               label: Text(_archivo == null
                   ? 'Elegir PDF'
-                  : '${_archivo!.name} · ${(_archivo!.size / 1024 / 1024).toStringAsFixed(1)} MB'),
+                  : '${_archivo!.name} · ${(_bytesPdf!.length / 1024 / 1024).toStringAsFixed(1)} MB'),
             ),
             const SizedBox(height: 16),
             Text('¿Qué necesitas?', style: tema.textTheme.titleMedium),
