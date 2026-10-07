@@ -41,3 +41,29 @@ jobs:
           name: SolAgro-beta-apk
           path: build/app/outputs/flutter-apk/app-release.apk
           retention-days: 30
+  
+build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Clonar el repositorio
+        uses: actions/checkout@v4
+      
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          
+      - name: Instalar dependencias
+        run: flutter pub get
+        
+      - name: Compilar los archivos base de Windows
+        run: flutter build windows --release
+        
+      - name: Empaquetar en un Instalador (.exe)
+        run: dart run inno_bundle:build
+        
+      - name: Subir Instalador
+        uses: actions/upload-artifact@v4
+        with:
+          name: SolAgro-Instalador-Windows
+          path: build/windows/innosetup/*.exe
