@@ -43,7 +43,7 @@ jobs:
           retention-days: 30
   
   build-windows:
-    runs-on: windows-latest
+    runs-on: windows-2019
     steps:
       - name: Clonar el repositorio
         uses: actions/checkout@v4
